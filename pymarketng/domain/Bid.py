@@ -7,6 +7,7 @@ class Bid:
         self, price, user, quantity=1.0, buying=True, time=0, divisible=True
     ) -> None:
         self.quantity = quantity
+        self.remaining_quantity = quantity
         self.price = price
         self.user = user
         self.buying = buying
@@ -31,6 +32,7 @@ class Bid:
     def as_dict(self):
         return {
             "quantity": self.quantity,
+            "remaining_quantity": self.remaining_quantity,
             "price": self.price,
             "user": self.user,
             "buying": self.buying,
