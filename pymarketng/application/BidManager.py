@@ -25,14 +25,15 @@ class BidManager:
                 else:
                     self.sellers.append(b)
 
+    # TODO: cache this dataframe (performance issue)
     def get_df(self):
-        return pd.DataFrame([b.as_dict() for b in self.buyyers + self.sellers])
+        return pd.json_normalize([b.as_dict() for b in self.buyyers + self.sellers])
 
     def get_df_buyyers(self):
-        return pd.DataFrame([b.as_dict() for b in self.buyyers])
+        return pd.json_normalize([b.as_dict() for b in self.buyyers])
     
     def get_df_sellers(self):
-        return pd.DataFrame([b.as_dict() for b in self.sellers])
+        return pd.json_normalize([b.as_dict() for b in self.sellers])
 
     def get_breakeven_index(self):
         self.sort()

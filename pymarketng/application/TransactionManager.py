@@ -14,4 +14,4 @@ class TransactionManager:
         self.trans.extend(bids)
 
     def get_df(self):
-        return pd.DataFrame([b.as_dict() for b in self.trans])
+        return pd.json_normalize([t.as_dict() for t in self.trans])

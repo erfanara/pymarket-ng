@@ -11,9 +11,22 @@ class Transaction:
 
     def as_dict(self):
         return {
-            "buyyer_bid": self.buyyer_bid,
-            "seller_bid": self.seller_bid,
-            "buy_price": self.buy_price,
-            "sell_price": self.sell_price,
+            "mechanism":{
+                "buy_price": self.buy_price,
+                "sell_price": self.sell_price,
+                "quantity": self.quantity
+            },
+            "buyer": {
+                "id": self.buyyer_bid.user,
+                "price" : self.buyyer_bid.price,
+                "quantity": self.buyyer_bid.quantity,
+                "remaining_quantity": self.buyyer_bid.remaining_quantity
+            },
+            "seller": {
+                "id": self.seller_bid.user,
+                "price" : self.seller_bid.price,
+                "quantity": self.seller_bid.quantity,
+                "remaining_quantity": self.seller_bid.remaining_quantity
+            },
             # "active": self.active,
         }

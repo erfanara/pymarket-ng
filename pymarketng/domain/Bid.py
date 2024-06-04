@@ -31,11 +31,11 @@ class Bid:
 
     def as_dict(self):
         return {
-            "quantity": self.quantity,
-            "remaining_quantity": self.remaining_quantity,
-            "price": self.price,
             "user": self.user,
             "buying": self.buying,
+            "price": self.price,
+            "quantity": self.quantity,
+            "remaining_quantity": self.remaining_quantity,
             "time": self.time,
             "divisible": self.divisible,
         }
