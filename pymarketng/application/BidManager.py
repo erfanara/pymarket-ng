@@ -39,7 +39,7 @@ class BidManager:
         m = min(len(self.buyyers), len(self.sellers))
         for i in range(m):
             if self.buyyers[i].price < self.sellers[i].price:
-                return i - 1
+                return i
         return m
 
     def sort(self):
