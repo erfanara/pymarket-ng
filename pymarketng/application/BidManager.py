@@ -3,6 +3,7 @@ import pandas as pd
 
 from pymarketng.domain.Bid import Bid
 
+# TODO: stateless and readonly?
 
 class BidManager:
     def __init__(self) -> None:
@@ -47,9 +48,9 @@ class BidManager:
         self.buyyers.sort(reverse=True)
         self.sellers.sort()
 
-    def run(self, Mechanism_class):
+    def run(self, Mechanism_class, *args):
         m = Mechanism_class(self)
-        m.launch()
+        m.launch(*args)
         return m
 
     def plot(self):
