@@ -11,17 +11,19 @@ class BidManager:
 
     def add_bid(self, *bids: Bid):
         for b in bids:
-            if b.buying:
-                self.buyyers.append(b)
-            else:
-                self.sellers.append(b)
+            if b.price != 0 and b.quantity !=0:
+                if b.buying:
+                    self.buyyers.append(b)
+                else:
+                    self.sellers.append(b)
 
     def add_bids(self, bids: list[Bid]):
         for b in bids:
-            if b.buying:
-                self.buyyers.append(b)
-            else:
-                self.sellers.append(b)
+            if b.price != 0 and b.quantity !=0:
+                if b.buying:
+                    self.buyyers.append(b)
+                else:
+                    self.sellers.append(b)
 
     def get_df(self):
         return pd.DataFrame([b.as_dict() for b in self.buyyers + self.sellers])
@@ -32,12 +34,13 @@ class BidManager:
     def get_df_sellers(self):
         return pd.DataFrame([b.as_dict() for b in self.sellers])
 
-    def get_breakeven_index(self) -> int:
+    def get_breakeven_index(self):
         self.sort()
-        for i in range(min(len(self.buyyers), len(self.sellers))):
+        m = min(len(self.buyyers), len(self.sellers))
+        for i in range(m):
             if self.buyyers[i].price < self.sellers[i].price:
                 return i - 1
-        return 0
+        return m
 
     def sort(self):
         self.buyyers.sort(reverse=True)
