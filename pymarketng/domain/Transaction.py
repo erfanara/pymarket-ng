@@ -9,24 +9,30 @@ class Transaction:
         self.quantity = quantity
         self.active = active
 
+        self.buyer_profit_per_unit = buyyer_bid.price - buy_price
+        self.seller_profit_per_unit = sell_price - seller_bid.price
+        self.buyer_total_profit = self.buyer_profit_per_unit * quantity
+        self.seller_total_profit = self.seller_profit_per_unit * quantity
+        self.buyyer_bid.user
+
     def as_dict(self):
         return {
-            "mechanism":{
+            "mechanism": {
                 "buy_price": self.buy_price,
                 "sell_price": self.sell_price,
-                "quantity": self.quantity
+                "quantity": self.quantity,
             },
             "buyer": {
                 "id": self.buyyer_bid.user,
-                "price" : self.buyyer_bid.price,
+                "price": self.buyyer_bid.price,
                 "quantity": self.buyyer_bid.quantity,
-                "remaining_quantity": self.buyyer_bid.remaining_quantity
+                "remaining_quantity": self.buyyer_bid.remaining_quantity,
             },
             "seller": {
                 "id": self.seller_bid.user,
-                "price" : self.seller_bid.price,
+                "price": self.seller_bid.price,
                 "quantity": self.seller_bid.quantity,
-                "remaining_quantity": self.seller_bid.remaining_quantity
+                "remaining_quantity": self.seller_bid.remaining_quantity,
             },
             # "active": self.active,
         }

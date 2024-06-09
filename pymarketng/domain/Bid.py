@@ -1,15 +1,18 @@
+from pymarketng.domain.User import User
+
+
 class Bid:
     """
     price: per unit of quantity
     """
 
     def __init__(
-        self, price, user, quantity=1.0, buying=True, time=0, divisible=True
+        self, price:float, user_id:int, quantity=1.0, buying=True, time=0, divisible=True
     ) -> None:
         self.quantity = quantity
         self.remaining_quantity = quantity
         self.price = price
-        self.user = user
+        self.user = User(user_id)
         self.buying = buying
         self.time = time
         self.divisible = divisible

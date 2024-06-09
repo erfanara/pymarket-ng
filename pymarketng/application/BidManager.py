@@ -1,6 +1,7 @@
 import pandas as pd
 
 
+from pymarketng.application.UserManager import UserManager
 from pymarketng.domain.Bid import Bid
 
 # TODO: stateless and readonly?
@@ -9,22 +10,20 @@ class BidManager:
     def __init__(self) -> None:
         self.buyyers = []
         self.sellers = []
+        self.um = UserManager()
 
     def add_bid(self, *bids: Bid):
         for b in bids:
             if b.price != 0 and b.quantity !=0:
                 if b.buying:
                     self.buyyers.append(b)
+                    self.um.add_user(b.user)
                 else:
                     self.sellers.append(b)
+                    self.um.add_user(b.user)
 
     def add_bids(self, bids: list[Bid]):
-        for b in bids:
-            if b.price != 0 and b.quantity !=0:
-                if b.buying:
-                    self.buyyers.append(b)
-                else:
-                    self.sellers.append(b)
+        self.add_bid(*bids)
 
     # TODO: cache this dataframe (performance issue)
     def get_df(self):

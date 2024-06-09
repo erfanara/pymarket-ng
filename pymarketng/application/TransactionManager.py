@@ -11,7 +11,7 @@ class TransactionManager:
         self.trans.extend(transactions)
 
     def add_transactions(self, transactions: list[Transaction]):
-        self.trans.extend(transactions)
+        self.add_transaction(*transactions)
 
     def get_df(self):
         return pd.json_normalize([t.as_dict() for t in self.trans])
