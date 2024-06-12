@@ -17,7 +17,13 @@ class Transaction:
         self.seller_profit_per_unit = sell_price - seller_bid.price
         self.buyer_total_profit = self.buyer_profit_per_unit * quantity
         self.seller_total_profit = self.seller_profit_per_unit * quantity
-        self.buyyer_bid.user
+        self.buyyer_bid.user.profit_per_unit += self.buyer_profit_per_unit
+        self.seller_bid.user.profit_per_unit += self.seller_profit_per_unit
+        self.buyyer_bid.user.total_profit += self.buyer_total_profit
+        self.seller_bid.user.total_profit += self.seller_total_profit
+
+        self.buyyer_bid.user.transactions.append(self)
+        self.seller_bid.user.transactions.append(self)
 
     def as_dict(self):
         return {
@@ -40,3 +46,6 @@ class Transaction:
             },
             # "active": self.active,
         }
+
+    def __repr__(self) -> str:
+        return f"({self.buyyer_bid.user.id}, {self.buy_price})<({self.quantity})>({self.seller_bid.user.id}, {self.sell_price})"

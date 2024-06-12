@@ -17,6 +17,16 @@ class Bid:
         self.time = time
         self.divisible = divisible
 
+        # update user
+        if self.buying:
+            self.user.total_bid -= self.price*self.quantity
+            self.user.total_quantity -= self.quantity
+        else:
+            self.user.total_bid += self.price*self.quantity
+            self.user.total_quantity += self.quantity
+        
+        self.user.bids.append(self)
+
     def __eq__(self, other):
         return self.price == other.price
 

@@ -1,3 +1,4 @@
+from typing import List
 import pandas as pd
 import copy
 
@@ -7,8 +8,8 @@ from pymarketng.domain.Bid import Bid
 
 class BidManager:
     def __init__(self) -> None:
-        self.buyyers = []
-        self.sellers = []
+        self.buyyers: List[Bid] = []
+        self.sellers: List[Bid] = []
         self.um = UserManager()
 
     def add(self, *args):
@@ -49,9 +50,9 @@ class BidManager:
 
     def run(self, Mechanism_class, *args):
         bm_copy = copy.deepcopy(self)
-        m = Mechanism_class(bm_copy)
-        m.launch(*args)
-        return bm_copy, m
+        tm = Mechanism_class(bm_copy)
+        tm.run(*args)
+        return bm_copy, tm
 
     def plot(self):
         from pymarketng.application.Plot import plot_demand_curves

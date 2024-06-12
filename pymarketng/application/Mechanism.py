@@ -60,6 +60,30 @@ class Mechanism(TransactionManager):
         for _ in range(j):
             self.bm.sellers.pop(0)
 
+    def update_users_participation_num(self):
+        print("update_users_participation_num (after deepcopy)")
+        users = set()
+        for b in self.bm.buyyers:
+            users.add(b.user)
+            print("b", b.user)
+        for s in self.bm.sellers:
+            users.add(s.user)
+            print("s", s.user)
+        for u in users:
+            u.num_of_participations += 1
+            print("u", u)
+
+    def run(self, *args):
+        self.pre_launch(*args)
+        self.launch(*args)
+        self.post_launch(*args)
+
+    def pre_launch(self,*args):
+        self.update_users_participation_num()
+
+    def post_launch(self,*args):
+        pass
+
     # should be implemented in child classes
     def launch(self, *args):
         pass

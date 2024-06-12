@@ -173,6 +173,7 @@ def supply_curve(bm:BidManager):
 
 #     return x_ast, f_ast, g_ast, v
 
+# BUG: if all of bids are buy or sell this won't work
 def plot_demand_curves(bm:BidManager, ax=None, margin_X=1.2, margin_Y=1.2):
     if ax is None:
         fig, ax = plt.subplots()
