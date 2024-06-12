@@ -11,13 +11,14 @@ from collections import OrderedDict
 # maximum_aggregated_utility
 # profits
 
+
 def maximum_aggregated_utility(bids, *args, reservation_prices=None):
     if reservation_prices is None:
         reservation_prices = OrderedDict()
 
     model = pulp.LpProblem("Max aggregated utility", pulp.LpMaximize)
-    buyers = bids.loc[bids['buying']].index.values
-    sellers = bids.loc[~bids['buying']].index.values
+    buyers = bids.loc[bids["buying"]].index.values
+    sellers = bids.loc[~bids["buying"]].index.values
     index = [(i, j) for i in buyers for j in sellers]
 
     for i, x in bids.iterrows():
@@ -29,7 +30,7 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
     for x in index:
         coeffs[x] = reservation_prices[x[0]] - reservation_prices[x[1]]
 
-    qs = pulp.LpVariable.dicts('q', index, lowBound=0, cat='Continuous')
+    qs = pulp.LpVariable.dicts("q", index, lowBound=0, cat="Continuous")
 
     model += pulp.lpSum([qs[x[0], x[1]] * coeffs[x] for x in index])
 
@@ -61,15 +62,15 @@ def percentage_welfare(bids, transactions, reservation_prices=None, **kwargs):
 
     _, objective, _ = maximum_aggregated_utility(bids, reservation_prices)
 
-    tmp = bids.reset_index().rename(columns={'index': 'bid'})
-    tmp = tmp[['bid', 'price', 'buying']]
-    merged = transactions.merge(tmp, on='bid')
+    tmp = bids.reset_index().rename(columns={"index": "bid"})
+    tmp = tmp[["bid", "price", "buying"]]
+    merged = transactions.merge(tmp, on="bid")
 
-    buyers = merged.loc[merged['buying']]
+    buyers = merged.loc[merged["buying"]]
     profit_buyers = (buyers.price_y - buyers.price_x) * buyers.quantity
     profit_buyers = profit_buyers.sum()
 
-    sellers = merged.loc[~merged['buying']]
+    sellers = merged.loc[~merged["buying"]]
     profit_sellers = (sellers.price_x - sellers.price_y) * sellers.quantity
     profit_sellers = profit_sellers.sum()
 
@@ -80,25 +81,29 @@ def percentage_welfare(bids, transactions, reservation_prices=None, **kwargs):
     else:
         return None
 
+
 def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
     model = pulp.LpProblem("Max aggregated utility", pulp.LpMaximize)
-    buyers = bids.loc[bids['buying']].index.values
-    sellers = bids.loc[~bids['buying']].index.values
+    buyers = bids.loc[bids["buying"]].index.values
+    sellers = bids.loc[~bids["buying"]].index.values
 
-    index = [(i, j) for i in buyers for j in sellers
-             if bids.iloc[i, 1] >= bids.iloc[j, 1]]
+    index = [
+        (i, j) for i in buyers for j in sellers if bids.iloc[i, 1] >= bids.iloc[j, 1]
+    ]
 
-    qs = pulp.LpVariable.dicts('q', index, lowBound=0, cat='Continuous')
+    qs = pulp.LpVariable.dicts("q", index, lowBound=0, cat="Continuous")
 
     model += pulp.lpSum([qs[x[0], x[1]] for x in index])
 
     for b in buyers:
-        model += pulp.lpSum(qs[b, j]
-                            for j in sellers if (b, j) in index) <= bids.iloc[b, 0]
+        model += (
+            pulp.lpSum(qs[b, j] for j in sellers if (b, j) in index) <= bids.iloc[b, 0]
+        )
 
     for s in sellers:
-        model += pulp.lpSum(qs[i, s]
-                            for i in buyers if (i, s) in index) <= bids.iloc[s, 0]
+        model += (
+            pulp.lpSum(qs[i, s] for i in buyers if (i, s) in index) <= bids.iloc[s, 0]
+        )
 
     model.solve()
 
@@ -124,15 +129,10 @@ def percentage_traded(bids, transactions, reservation_prices=OrderedDict(), **kw
         return None
 
 
-def calculate_profits(
-        bids,
-        transactions,
-        reservation_prices=None,
-        fees=None,
-        **kwargs):
+def calculate_profits(bids, transactions, reservation_prices=None, fees=None, **kwargs):
     users = sorted(bids.user.unique())
-    buyers = bids.loc[bids['buying']].index.values
-    sellers = bids.loc[~bids['buying']].index.values
+    buyers = bids.loc[bids["buying"]].index.values
+    sellers = bids.loc[~bids["buying"]].index.values
 
     if reservation_prices is None:
         reservation_prices = OrderedDict()
@@ -144,30 +144,31 @@ def calculate_profits(
         fees = np.zeros(bids.user.unique().shape[0])
 
     profit = OrderedDict()
-    for case in ['bid', 'reservation']:
-        tmp = bids.reset_index().rename(columns={'index': 'bid'}).copy()
-        tmp = tmp[['bid', 'price', 'buying', 'user']]
-        if case == 'reservation':
+    for case in ["bid", "reservation"]:
+        tmp = bids.reset_index().rename(columns={"index": "bid"}).copy()
+        tmp = tmp[["bid", "price", "buying", "user"]]
+        if case == "reservation":
             tmp.price = tmp.apply(
-                lambda x: reservation_prices.get(x.bid, x.price), axis=1)
-        merged = transactions.merge(tmp, on='bid').copy()
-        merged['gain'] = merged.apply(lambda x: get_gain(x), axis=1)
-        profit_player = merged.groupby('user')['gain'].sum()
+                lambda x: reservation_prices.get(x.bid, x.price), axis=1
+            )
+        merged = transactions.merge(tmp, on="bid").copy()
+        merged["gain"] = merged.apply(lambda x: get_gain(x), axis=1)
+        profit_player = merged.groupby("user")["gain"].sum()
         # print(profit_player)
         profit_player = np.array([profit_player.get(x, 0) for x in users])
-        profit['player_{}'.format(case)] = profit_player.astype('float64')
+        profit["player_{}".format(case)] = profit_player.astype("float64")
 
-        if case == 'bid':
+        if case == "bid":
             # print(merged)
-            mb = merged.loc[merged['buying']]
-            ms = merged.loc[~merged['buying']]
+            mb = merged.loc[merged["buying"]]
+            ms = merged.loc[~merged["buying"]]
             # print(ms)
             # print(ms.quantity.sum(), mb.quantity.sum())
             # print(ms.price_x * ms.quantity)
             profit_market = (mb.price_x * mb.quantity).values.sum()
             profit_market -= (ms.price_x * ms.quantity).values.sum()
             profit_market += fees.sum()
-            profit['market'] = profit_market.astype('float64')
+            profit["market"] = profit_market.astype("float64")
 
     return profit
 
@@ -175,5 +176,5 @@ def calculate_profits(
 def get_gain(row):
     gap = row.price_y - row.price_x
     if not row.buying:
-        gap = - gap
+        gap = -gap
     return gap * row.quantity

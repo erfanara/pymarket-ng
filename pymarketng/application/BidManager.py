@@ -6,6 +6,7 @@ import copy
 from pymarketng.application.UserManager import UserManager
 from pymarketng.domain.Bid import Bid
 
+
 class BidManager:
     def __init__(self) -> None:
         self.buyyers: List[Bid] = []
@@ -13,12 +14,12 @@ class BidManager:
         self.um = UserManager()
 
     def add(self, *args):
-        b=Bid(*args)
+        b = Bid(*args)
         self.add_bid(b)
 
     def add_bid(self, *bids: Bid):
         for b in bids:
-            if b.price != 0 and b.quantity !=0:
+            if b.price != 0 and b.quantity != 0:
                 if b.buying:
                     self.buyyers.append(b)
                     self.um.add_user(b.user)
@@ -32,7 +33,7 @@ class BidManager:
 
     def get_df_buyyers(self):
         return pd.json_normalize([b.as_dict() for b in self.buyyers])
-    
+
     def get_df_sellers(self):
         return pd.json_normalize([b.as_dict() for b in self.sellers])
 
@@ -56,4 +57,5 @@ class BidManager:
 
     def plot(self):
         from pymarketng.application.Plot import plot_demand_curves
+
         plot_demand_curves(self)

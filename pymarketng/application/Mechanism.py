@@ -69,10 +69,10 @@ class Mechanism(TransactionManager):
         self.launch(*args)
         self.post_launch(*args)
 
-    def pre_launch(self,*args):
+    def pre_launch(self, *args):
         self.update_users_participation_num()
 
-    def post_launch(self,*args):
+    def post_launch(self, *args):
         pass
 
     # should be implemented in child classes
@@ -216,7 +216,9 @@ class Leftover_Clear(Mechanism):
         base_buy_price = args[0]
         base_sell_price = args[1]
         base_buy_bid = Bid(price=base_buy_price, user_id=-1, quantity=-1, buying=True)
-        base_sell_bid = Bid(price=base_sell_price, user_id=-1, quantity=-1, buying=False)
+        base_sell_bid = Bid(
+            price=base_sell_price, user_id=-1, quantity=-1, buying=False
+        )
 
         for b in self.bm.buyyers:
             t = Transaction(
@@ -238,6 +240,6 @@ class Leftover_Clear(Mechanism):
             )
             print(s)
             self.add_transaction(t)
-        
+
         self.bm.buyyers.clear()
         self.bm.sellers.clear()

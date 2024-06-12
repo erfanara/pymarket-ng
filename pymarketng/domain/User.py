@@ -11,7 +11,7 @@ class User:
         return cls._instances[id_num]
 
     def __init__(self, id_num, name="") -> None:
-        if not hasattr(self, 'id'):
+        if not hasattr(self, "id"):
             self.name = name
             self.id = id_num
             self.total_bid = 0.0
@@ -43,7 +43,7 @@ class User:
         return str(self.id)
 
     def __key(self):
-        return (self.id)
+        return self.id
 
     def __hash__(self):
         return hash(self.__key())

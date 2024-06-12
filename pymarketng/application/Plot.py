@@ -10,23 +10,23 @@ from pymarketng.application.Mechanism import BidManager
 from pymarketng.application.TransactionManager import TransactionManager
 
 
-def demand_curve(bm:BidManager):
+def demand_curve(bm: BidManager):
     bm.sort()
     buying = bm.get_df_buyyers()
-    buying['acum'] = buying.quantity.cumsum()
-    demand_curve = buying[['acum', 'price']].values
+    buying["acum"] = buying.quantity.cumsum()
+    demand_curve = buying[["acum", "price"]].values
     demand_curve = np.vstack([demand_curve, [np.inf, 0]])
-    index = buying.index.values.astype('int64')
+    index = buying.index.values.astype("int64")
     return demand_curve, index
 
 
-def supply_curve(bm:BidManager):
+def supply_curve(bm: BidManager):
     bm.sort()
     selling = bm.get_df_sellers()
-    selling['acum'] = selling.quantity.cumsum()
-    supply_curve = selling[['acum', 'price']].values
+    selling["acum"] = selling.quantity.cumsum()
+    supply_curve = selling[["acum", "price"]].values
     supply_curve = np.vstack([supply_curve, [np.inf, np.inf]])
-    index = selling.index.values.astype('int64')
+    index = selling.index.values.astype("int64")
     return supply_curve, index
 
 
@@ -173,8 +173,9 @@ def supply_curve(bm:BidManager):
 
 #     return x_ast, f_ast, g_ast, v
 
+
 # BUG: if all of bids are buy or sell this won't work
-def plot_demand_curves(bm:BidManager, ax=None, margin_X=1.2, margin_Y=1.2):
+def plot_demand_curves(bm: BidManager, ax=None, margin_X=1.2, margin_Y=1.2):
     if ax is None:
         fig, ax = plt.subplots()
 
@@ -201,51 +202,40 @@ def plot_demand_curves(bm:BidManager, ax=None, margin_X=1.2, margin_Y=1.2):
     y_sp[-1] = max_point
     y_sp = np.concatenate([y_sp, [y_sp[-1]]])
 
-    ax.step(x_dc, y_dc, where='post', c='r', label='Demand')
-    ax.step(x_sp, y_sp, where='post', c='b', label='Supply')
-    ax.set_xlabel('Quantity')
-    ax.set_ylabel('Price')
+    ax.step(x_dc, y_dc, where="post", c="r", label="Demand")
+    ax.step(x_sp, y_sp, where="post", c="b", label="Supply")
+    ax.set_xlabel("Quantity")
+    ax.set_ylabel("Price")
     ax.legend()
     plt.show()
 
-def plot_trades_as_graph(
-        bm:BidManager,
-        tm:TransactionManager,
-        ax=None):
-    buyers=bm.get_df_buyyers()
+
+def plot_trades_as_graph(bm: BidManager, tm: TransactionManager, ax=None):
+    buyers = bm.get_df_buyyers()
     bids = bm.get_df()
     tmp = tm.get_df()
-    tmp['user_1'] = tmp.seller_bid.map(bids.user)
-    tmp['user_2'] = tmp.source.map(bids.user)
-    tmp['buying'] = tmp.buyyer_bid.map(buyers)
+    tmp["user_1"] = tmp.seller_bid.map(bids.user)
+    tmp["user_2"] = tmp.source.map(bids.user)
+    tmp["buying"] = tmp.buyyer_bid.map(buyers)
 
-    G = nx.from_pandas_edgelist(tmp, 'user_1', 'user_2')
+    G = nx.from_pandas_edgelist(tmp, "user_1", "user_2")
 
     edge_labels = OrderedDict()
-    duplicated_labels = tmp.set_index(
-        ['user_1', 'user_2'])['quantity'].to_dict()
+    duplicated_labels = tmp.set_index(["user_1", "user_2"])["quantity"].to_dict()
     for (x, y), v in duplicated_labels.items():
-        if ((x, y) not in edge_labels and (y, x) not in edge_labels):
+        if (x, y) not in edge_labels and (y, x) not in edge_labels:
             edge_labels[(x, y)] = v
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(8, 6))
 
-    pos = nx.bipartite_layout(G, buyers, align='horizontal', scale=3)
-    _ = nx.draw_networkx_nodes(
-        G,
-        pos=pos,
-        ax=ax,
-        node_color='k',
-        node_size=500)
-    _ = nx.draw_networkx_labels(G, pos=pos, ax=ax, font_color='w')
+    pos = nx.bipartite_layout(G, buyers, align="horizontal", scale=3)
+    _ = nx.draw_networkx_nodes(G, pos=pos, ax=ax, node_color="k", node_size=500)
+    _ = nx.draw_networkx_labels(G, pos=pos, ax=ax, font_color="w")
     _ = nx.draw_networkx_edges(G, pos=pos, label=G, ax=ax)
     _ = nx.draw_networkx_edge_labels(
-        G,
-        pos=pos,
-        edge_labels=edge_labels,
-        label_pos=0.9,
-        ax=ax)
-    _ = ax.axis('off')
+        G, pos=pos, edge_labels=edge_labels, label_pos=0.9, ax=ax
+    )
+    _ = ax.axis("off")
 
     return ax
