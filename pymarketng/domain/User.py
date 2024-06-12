@@ -35,9 +35,11 @@ class User:
             "total_profit": self.total_profit,
             "participations": self.num_of_participations,
             "score": self.score,
+            # "addr": hex(id(self))
         }
 
     def __repr__(self) -> str:
+        # return hex(id(self))
         return str(self.id)
 
     def __key(self):

@@ -61,17 +61,8 @@ class Mechanism(TransactionManager):
             self.bm.sellers.pop(0)
 
     def update_users_participation_num(self):
-        print("update_users_participation_num (after deepcopy)")
-        users = set()
-        for b in self.bm.buyyers:
-            users.add(b.user)
-            print("b", b.user)
-        for s in self.bm.sellers:
-            users.add(s.user)
-            print("s", s.user)
-        for u in users:
+        for u in self.bm.um.users:
             u.num_of_participations += 1
-            print("u", u)
 
     def run(self, *args):
         self.pre_launch(*args)
