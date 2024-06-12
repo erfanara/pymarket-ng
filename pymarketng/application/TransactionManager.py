@@ -7,11 +7,12 @@ class TransactionManager:
     def __init__(self) -> None:
         self.trans = []
 
+    def add(self,*args):
+        t=Transaction(*args)
+        self.add_transaction(t)
+
     def add_transaction(self, *transactions: Transaction):
         self.trans.extend(transactions)
-
-    def add_transactions(self, transactions: list[Transaction]):
-        self.add_transaction(*transactions)
 
     def get_df(self):
         return pd.json_normalize([t.as_dict() for t in self.trans])

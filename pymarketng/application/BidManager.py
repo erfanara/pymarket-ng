@@ -12,6 +12,10 @@ class BidManager:
         self.sellers = []
         self.um = UserManager()
 
+    def add(self, *args):
+        b=Bid(*args)
+        self.add_bid(b)
+
     def add_bid(self, *bids: Bid):
         for b in bids:
             if b.price != 0 and b.quantity !=0:
@@ -21,9 +25,6 @@ class BidManager:
                 else:
                     self.sellers.append(b)
                     self.um.add_user(b.user)
-
-    def add_bids(self, bids: list[Bid]):
-        self.add_bid(*bids)
 
     # TODO: cache this dataframe (performance issue)
     def get_df(self):

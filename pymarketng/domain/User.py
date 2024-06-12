@@ -1,12 +1,9 @@
-from typing import Dict
-
-
 class User:
     id_counter = 0
 
     def __init__(self, id_num, name="") -> None:
         self.name = name
-        self.id = id
+        self.id = id_num
         self.balance = 0
         self.total_profit = 0
         self.profit_per_unit = 0
@@ -15,14 +12,14 @@ class User:
         self.num_of_participations = 0
         self.score = 0  # custom variables for user
 
-    # def as_dict(self):
-    #     return {
-    #         "id": self.id,
-    #         "profit": self.profit,
-    #         "transactoins": self.transactions,
-    #         "bids": self.bids,
-    #         "participations": self.num_of_participations,
-    #     }
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "profit": self.total_profit,
+            "transactoins": self.transactions,
+            "bids": self.bids,
+            "participations": self.num_of_participations,
+        }
 
     def __repr__(self) -> str:
         return str(self.id)
