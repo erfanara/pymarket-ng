@@ -1,6 +1,4 @@
 class User:
-    id_counter = 0
-
     def __init__(self, id_num, name="") -> None:
         self.name = name
         self.id = id_num
