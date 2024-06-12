@@ -9,6 +9,10 @@ class Transaction:
         self.quantity = quantity
         self.active = active
 
+        # update remaining_quantity
+        self.buyyer_bid.remaining_quantity -= quantity
+        self.seller_bid.remaining_quantity -= quantity
+
         self.buyer_profit_per_unit = buyyer_bid.price - buy_price
         self.seller_profit_per_unit = sell_price - seller_bid.price
         self.buyer_total_profit = self.buyer_profit_per_unit * quantity

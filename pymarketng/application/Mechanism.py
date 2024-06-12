@@ -49,10 +49,6 @@ class Mechanism(TransactionManager):
             )
             self.add_transaction(t)
 
-            # update remaining_quantity
-            self.bm.sellers[j].remaining_quantity -= q
-            self.bm.buyyers[i].remaining_quantity -= q
-
             if self.bm.buyyers[i].remaining_quantity == 0:
                 i += 1
             if self.bm.sellers[j].remaining_quantity == 0:

@@ -1,10 +1,9 @@
 import pandas as pd
+import copy
 
 
 from pymarketng.application.UserManager import UserManager
 from pymarketng.domain.Bid import Bid
-
-# TODO: stateless and readonly?
 
 class BidManager:
     def __init__(self) -> None:
@@ -49,9 +48,10 @@ class BidManager:
         self.sellers.sort()
 
     def run(self, Mechanism_class, *args):
-        m = Mechanism_class(self)
+        bm_copy = copy.deepcopy(self)
+        m = Mechanism_class(bm_copy)
         m.launch(*args)
-        return m
+        return bm_copy, m
 
     def plot(self):
         from pymarketng.application.Plot import plot_demand_curves
