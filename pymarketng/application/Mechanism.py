@@ -204,8 +204,8 @@ class Leftover_Clear(Mechanism):
         print(args)
         base_buy_price = args[0]
         base_sell_price = args[1]
-        base_buy_bid = Bid(price=base_buy_price, user=-1, quantity=-1, buying=True)
-        base_sell_bid = Bid(price=base_sell_price, user=-1, quantity=-1, buying=False)
+        base_buy_bid = Bid(price=base_buy_price, user_id=-1, quantity=-1, buying=True)
+        base_sell_bid = Bid(price=base_sell_price, user_id=-1, quantity=-1, buying=False)
 
         for b in self.bm.buyyers:
             t = Transaction(
