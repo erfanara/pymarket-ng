@@ -114,9 +114,6 @@ class Mechanism(TransactionManager, metaclass=MC):
             "percentage_welfare": self.get_percentage_welfare(),
         }
 
-    def __str__(self) -> str:
-        return "test"
-
 class Average_Mechanism(Mechanism):
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
