@@ -3,6 +3,10 @@ import pandas as pd
 import copy
 
 
+from pymarketng.application.Statistics import (
+    maximum_aggregated_utility,
+    maximum_traded_volume,
+)
 from pymarketng.application.UserManager import UserManager
 from pymarketng.domain.Bid import Bid
 
@@ -59,3 +63,15 @@ class BidManager:
         from pymarketng.application.Plot import plot_demand_curves
 
         plot_demand_curves(self)
+
+    def get_maximum_aggregated_utility(self):
+        return float(maximum_aggregated_utility(self.get_df())[1])
+
+    def get_maximum_traded_volume(self):
+        return float(maximum_traded_volume(self.get_df())[1])
+
+    def get_stats(self):
+        return {
+            "maximum_aggregated_utility": self.get_maximum_aggregated_utility(),
+            "maximum_traded_volume": self.get_maximum_traded_volume(),
+        }

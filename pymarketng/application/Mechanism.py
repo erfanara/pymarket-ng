@@ -14,6 +14,11 @@ class Mechanism(TransactionManager):
         bm.sort()
         self.bm = bm
         self.breakeven = bm.get_breakeven_index()
+        self.maximum_aggregated_utility = self.bm.get_maximum_aggregated_utility()
+        self.maximum_traded_volume = self.bm.get_maximum_traded_volume()
+        # updated on post-launch
+        self.percentage_welfare = 0
+        self.percentage_traded = 0
 
     # order match first k players
     # TODO: lambda for buy_price and sell_price
@@ -73,7 +78,8 @@ class Mechanism(TransactionManager):
         self.update_users_participation_num()
 
     def post_launch(self, *args):
-        pass
+        self.percentage_welfare = self.get_players_total_trade_profit() / self.maximum_aggregated_utility
+        self.percentage_traded = self.get_players_total_trade_quantity() / self.maximum_traded_volume
 
     # should be implemented in child classes
     def launch(self, *args):
@@ -83,10 +89,20 @@ class Mechanism(TransactionManager):
     def plot(self):
         pass
 
-    # should be implemented in child classes
-    def stat(self):
-        pass
+    def get_percentage_traded(self):
+        return self.percentage_traded
+    
+    def get_percentage_welfare(self):
+        return self.percentage_welfare
 
+    def get_stats(self):
+        return {
+            **super().get_stats(),
+            "maximum_aggregated_utility": self.maximum_aggregated_utility,
+            "maximum_traded_volume": self.maximum_traded_volume,
+            "percentage_traded": self.get_percentage_traded(),
+            "percentage_welfare": self.get_percentage_welfare(),
+        }
 
 class Average_Mechanism(Mechanism):
     def launch(self, *args):

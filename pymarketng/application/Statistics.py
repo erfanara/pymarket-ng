@@ -26,25 +26,21 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
             reservation_prices[i] = x.price
 
     coeffs = OrderedDict()
-
     for x in index:
         coeffs[x] = reservation_prices[x[0]] - reservation_prices[x[1]]
 
     qs = pulp.LpVariable.dicts("q", index, lowBound=0, cat="Continuous")
-
     model += pulp.lpSum([qs[x[0], x[1]] * coeffs[x] for x in index])
 
     for b in buyers:
-        model += pulp.lpSum(qs[b, j] for j in sellers) <= bids.iloc[b, 0]
-
+        model += pulp.lpSum(qs[b, j] for j in sellers) <= bids.iloc[b]['quantity']
     for s in sellers:
-        model += pulp.lpSum(qs[i, s] for i in buyers) <= bids.iloc[s, 0]
+        model += pulp.lpSum(qs[i, s] for i in buyers) <= bids.iloc[s]['quantity']
 
     model.solve()
 
     status = pulp.LpStatus[model.status]
     objective = pulp.value(model.objective)
-
     variables = OrderedDict()
     sorted_keys = sorted(qs.keys())
     for var in sorted_keys:
@@ -53,33 +49,6 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
 
     return status, objective, variables
 
-
-def percentage_welfare(bids, transactions, reservation_prices=None, **kwargs):
-    reservation_prices = OrderedDict()
-    for i, x in bids.iterrows():
-        if i not in reservation_prices:
-            reservation_prices[i] = x.price
-
-    _, objective, _ = maximum_aggregated_utility(bids, reservation_prices)
-
-    tmp = bids.reset_index().rename(columns={"index": "bid"})
-    tmp = tmp[["bid", "price", "buying"]]
-    merged = transactions.merge(tmp, on="bid")
-
-    buyers = merged.loc[merged["buying"]]
-    profit_buyers = (buyers.price_y - buyers.price_x) * buyers.quantity
-    profit_buyers = profit_buyers.sum()
-
-    sellers = merged.loc[~merged["buying"]]
-    profit_sellers = (sellers.price_x - sellers.price_y) * sellers.quantity
-    profit_sellers = profit_sellers.sum()
-
-    welfare = profit_buyers + profit_sellers
-
-    if objective > 0:
-        return welfare / objective
-    else:
-        return None
 
 
 def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
@@ -97,12 +66,12 @@ def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
 
     for b in buyers:
         model += (
-            pulp.lpSum(qs[b, j] for j in sellers if (b, j) in index) <= bids.iloc[b, 0]
+            pulp.lpSum(qs[b, j] for j in sellers if (b, j) in index) <= bids.iloc[b]['quantity']
         )
 
     for s in sellers:
         model += (
-            pulp.lpSum(qs[i, s] for i in buyers if (i, s) in index) <= bids.iloc[s, 0]
+            pulp.lpSum(qs[i, s] for i in buyers if (i, s) in index) <= bids.iloc[s]['quantity']
         )
 
     model.solve()
@@ -123,7 +92,7 @@ def percentage_traded(bids, transactions, reservation_prices=OrderedDict(), **kw
 
     total_traded = transactions.quantity.sum() / 2
 
-    if objective > 0:
+    if objective is not None:
         return total_traded / objective
     else:
         return None
