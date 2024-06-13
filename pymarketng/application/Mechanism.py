@@ -140,12 +140,11 @@ class VCG_Mechanism(Mechanism):
         if self.bm.get_breakeven_index() == 0:
             return
 
-        # FIX: MAX or MIN?
         buy_price = max(
             self.bm.sellers[self.breakeven - 1].price,
             self.bm.buyyers[self.breakeven].price,
         )
-        sell_price = max(
+        sell_price = min(
             self.bm.buyyers[self.breakeven - 1].price,
             self.bm.sellers[self.breakeven].price,
         )
@@ -158,12 +157,11 @@ class VCG_Mechanism_Multi(Mechanism):
         if self.bm.get_breakeven_index() == 0:
             return
 
-        # FIX: MAX or MIN?
         buy_price = max(
             self.bm.sellers[self.breakeven - 1].price,
             self.bm.buyyers[self.breakeven].price,
         )
-        sell_price = max(
+        sell_price = min(
             self.bm.buyyers[self.breakeven - 1].price,
             self.bm.sellers[self.breakeven].price,
         )
