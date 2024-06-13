@@ -16,7 +16,7 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
     if reservation_prices is None:
         reservation_prices = OrderedDict()
 
-    model = pulp.LpProblem("Max aggregated utility", pulp.LpMaximize)
+    model = pulp.LpProblem("Max_Aggregated_Utility", pulp.LpMaximize)
     buyers = bids.loc[bids["buying"]].index.values
     sellers = bids.loc[~bids["buying"]].index.values
     index = [(i, j) for i in buyers for j in sellers]
@@ -37,7 +37,7 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
     for s in sellers:
         model += pulp.lpSum(qs[i, s] for i in buyers) <= bids.iloc[s]['quantity']
 
-    model.solve()
+    model.solve(pulp.PULP_CBC_CMD(msg=False))
 
     status = pulp.LpStatus[model.status]
     objective = pulp.value(model.objective)
@@ -52,7 +52,7 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
 
 
 def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
-    model = pulp.LpProblem("Max aggregated utility", pulp.LpMaximize)
+    model = pulp.LpProblem("Max_Traded_Volume", pulp.LpMaximize)
     buyers = bids.loc[bids["buying"]].index.values
     sellers = bids.loc[~bids["buying"]].index.values
 
@@ -74,7 +74,7 @@ def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
             pulp.lpSum(qs[i, s] for i in buyers if (i, s) in index) <= bids.iloc[s]['quantity']
         )
 
-    model.solve()
+    model.solve(pulp.PULP_CBC_CMD(msg=False))
 
     status = pulp.LpStatus[model.status]
     objective = pulp.value(model.objective)
