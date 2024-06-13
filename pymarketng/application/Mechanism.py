@@ -8,7 +8,6 @@ from pymarketng.domain.Transaction import Transaction
 # from typing import Type
 
 
-# TODO delete bids that no need for them
 class Mechanism(TransactionManager):
     def __init__(self, bm: BidManager) -> None:
         super().__init__()
@@ -135,7 +134,6 @@ class Average_Mechanism_Multi(Mechanism):
 
 
 class VCG_Mechanism(Mechanism):
-    # TODO: auctioneer stats
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
             return
@@ -152,11 +150,11 @@ class VCG_Mechanism(Mechanism):
 
 
 class VCG_Mechanism_Multi(Mechanism):
-    # TODO: auctioneer stats
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
             return
 
+        print(self.breakeven, len(self.bm.sellers))
         buy_price = max(
             self.bm.sellers[self.breakeven - 1].price,
             self.bm.buyyers[self.breakeven].price,

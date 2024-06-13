@@ -32,12 +32,12 @@ class TransactionManager:
     def get_players_total_trade_quantity(self):
         return sum([t.quantity for t in self.trans])/2.0
 
-    def get_auctineer_profit(self):
+    def get_auctioneer_profit(self):
         return sum([t.quantity * (t.buy_price - t.sell_price) for t in self.trans])
 
     def get_stats(self):
         return {
             "players_total_trade_profit": self.get_players_total_trade_profit(),
             "players_total_trade_quantity": self.get_players_total_trade_quantity(),
-            "auctioneer_profit": self.get_auctineer_profit()
+            "auctioneer_profit": self.get_auctioneer_profit()
         }
