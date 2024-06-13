@@ -138,13 +138,14 @@ class VCG_Mechanism(Mechanism):
         if self.bm.get_breakeven_index() == 0:
             return
 
+        # TODO: Offset is okay for VCG mechanism?
         buy_price = max(
-            self.bm.sellers[self.breakeven - 1].price,
-            self.bm.buyyers[self.breakeven].price,
+            self.bm.sellers[self.breakeven - 2].price,
+            self.bm.buyyers[self.breakeven - 1].price,
         )
         sell_price = min(
-            self.bm.buyyers[self.breakeven - 1].price,
-            self.bm.sellers[self.breakeven].price,
+            self.bm.buyyers[self.breakeven - 2].price,
+            self.bm.sellers[self.breakeven - 1].price,
         )
         self.single_unit_order_match(self.breakeven, buy_price, sell_price)
 
@@ -154,14 +155,14 @@ class VCG_Mechanism_Multi(Mechanism):
         if self.bm.get_breakeven_index() == 0:
             return
 
-        print(self.breakeven, len(self.bm.sellers))
+        # TODO: Offset is okay for VCG mechanism?
         buy_price = max(
-            self.bm.sellers[self.breakeven - 1].price,
-            self.bm.buyyers[self.breakeven].price,
+            self.bm.sellers[self.breakeven - 2].price,
+            self.bm.buyyers[self.breakeven - 1].price,
         )
         sell_price = min(
-            self.bm.buyyers[self.breakeven - 1].price,
-            self.bm.sellers[self.breakeven].price,
+            self.bm.buyyers[self.breakeven - 2].price,
+            self.bm.sellers[self.breakeven - 1].price,
         )
         self.multi_unit_order_match(self.breakeven, buy_price, sell_price)
 
