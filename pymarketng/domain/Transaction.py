@@ -1,6 +1,9 @@
+from pymarketng.domain.Bid import Bid
+
+
 class Transaction:
     def __init__(
-        self, buyyer_bid, seller_bid, buy_price, sell_price, quantity=1.0, active=False
+        self, buyyer_bid:Bid, seller_bid:Bid, buy_price:float, sell_price:float, quantity=1.0, active=False
     ) -> None:
         self.buyyer_bid = buyyer_bid
         self.seller_bid = seller_bid

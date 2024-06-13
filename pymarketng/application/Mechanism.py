@@ -258,8 +258,8 @@ class Leftover_Clear(Mechanism):
             t = Transaction(
                 buyyer_bid=base_buy_bid,
                 seller_bid=s,
-                buy_price=base_buy_bid,
-                sell_price=base_buy_bid,
+                buy_price=base_buy_price,
+                sell_price=base_buy_price,
                 quantity=s.quantity,
             )
             print(s)
