@@ -65,10 +65,12 @@ class BidManager:
         plot_demand_curves(self)
 
     def get_maximum_aggregated_utility(self):
-        return float(maximum_aggregated_utility(self.get_df())[1])
+        result = maximum_aggregated_utility(self.get_df())[1]
+        return float(result if result is not None else 0)
 
     def get_maximum_traded_volume(self):
-        return float(maximum_traded_volume(self.get_df())[1])
+        result = maximum_traded_volume(self.get_df())[1] 
+        return float(result if result is not None else 0)
 
     def get_stats(self):
         return {

@@ -1,4 +1,5 @@
 from pymarketng.application.BidManager import BidManager
+from pymarketng.application.Statistics import percentage_traded
 from pymarketng.application.TransactionManager import TransactionManager
 from pymarketng.domain.Bid import Bid
 from pymarketng.domain.Transaction import Transaction
@@ -78,8 +79,15 @@ class Mechanism(TransactionManager):
         self.update_users_participation_num()
 
     def post_launch(self, *args):
-        self.percentage_welfare = self.get_players_total_trade_profit() / self.maximum_aggregated_utility
-        self.percentage_traded = self.get_players_total_trade_quantity() / self.maximum_traded_volume
+        try:
+            self.percentage_welfare = self.get_players_total_trade_profit() / self.maximum_aggregated_utility
+        except ZeroDivisionError:
+            self.percentage_welfare = None
+        
+        try:
+            self.percentage_traded = self.get_players_total_trade_quantity() / self.maximum_traded_volume
+        except ZeroDivisionError:
+            self.percentage_traded = None
 
     # should be implemented in child classes
     def launch(self, *args):
