@@ -7,8 +7,11 @@ from pymarketng.domain.Transaction import Transaction
 # import pandas as pd
 # from typing import Type
 
+class MC(type):
+    def __repr__(self) -> str:
+        return self.__name__
 
-class Mechanism(TransactionManager):
+class Mechanism(TransactionManager, metaclass=MC):
     def __init__(self, bm: BidManager) -> None:
         super().__init__()
         bm.sort()
@@ -110,6 +113,9 @@ class Mechanism(TransactionManager):
             "percentage_traded": self.get_percentage_traded(),
             "percentage_welfare": self.get_percentage_welfare(),
         }
+
+    def __str__(self) -> str:
+        return "test"
 
 class Average_Mechanism(Mechanism):
     def launch(self, *args):
