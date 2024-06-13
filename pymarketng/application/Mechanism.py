@@ -236,7 +236,6 @@ class Macafee_mechanism_Multi(Mechanism):
 
 class Leftover_Clear(Mechanism):
     def launch(self, *args):
-        print(args)
         base_buy_price = args[0]
         base_sell_price = args[1]
         base_buy_bid = Bid(price=base_buy_price, user_id=-1, quantity=-1, buying=True)
@@ -252,7 +251,6 @@ class Leftover_Clear(Mechanism):
                 sell_price=base_sell_price,
                 quantity=b.quantity,
             )
-            print(b)
             self.add_transaction(t)
         for s in self.bm.sellers:
             t = Transaction(
@@ -262,7 +260,6 @@ class Leftover_Clear(Mechanism):
                 sell_price=base_buy_price,
                 quantity=s.quantity,
             )
-            print(s)
             self.add_transaction(t)
 
         self.bm.buyyers.clear()
