@@ -23,14 +23,16 @@ class Market:
             raise ValueError(
                 "Function parameters must be named 'bm_list' and 'tm_list'"
             )
-        bm_list_param = signature.parameters["bm_list"]
-        tm_list_param = signature.parameters["tm_list"]
-        if bm_list_param.annotation != List[BidManager]:
+        if signature.parameters["bm_list"].annotation != List[BidManager]:
             raise ValueError("bm_list parameter must be a list of BidManager")
-        if tm_list_param.annotation != List[TransactionManager]:
+        if signature.parameters["tm_list"].annotation != List[TransactionManager]:
             raise ValueError("tm_list parameter must be a list of TransactionManager")
         if signature.return_annotation != Type[Mechanism]:
             raise ValueError("Function must return a subclass of Mechanism")
+
+    # def run(self):
+        
+
 
 
 def mechanism_selctor_avg(
