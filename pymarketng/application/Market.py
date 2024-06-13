@@ -10,8 +10,10 @@ class Market:
     def __init__(self, mechanism_selector: Callable) -> None:
         self.__check_signature_of_mechanism_selector(mechanism_selector)
         self.mechanism_selector = mechanism_selector
-        self.bm_list=[]
-        self.tm_list=[]
+        self.bm_list: List[BidManager] = []
+        self.tm_list: List[TransactionManager] = []
+        self.current_bm: BidManager = BidManager()
+        self.bm_list.append(self.current_bm)
 
     def __check_signature_of_mechanism_selector(self, func):
         signature = inspect.signature(func)
@@ -30,10 +32,16 @@ class Market:
         if signature.return_annotation != Type[Mechanism]:
             raise ValueError("Function must return a subclass of Mechanism")
 
-    # def run(self):
-        
+    def add(self):
+        pass
 
-
+    def run(self):
+        while True:
+            next_mechanism = self.mechanism_selector(self.bm_list, self.tm_list)
+            bm_new, tm = self.current_bm.run(next_mechanism)
+            self.bm_list.append(bm_new)
+            self.tm_list.append(tm)
+            self.current_bm = bm_new
 
 def mechanism_selctor_avg(
     bm_list: List[BidManager], tm_list: List[TransactionManager]
