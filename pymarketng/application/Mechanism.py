@@ -25,7 +25,7 @@ class Mechanism(TransactionManager, metaclass=MC):
 
     # order match first k players
     # TODO: lambda for buy_price and sell_price
-    def single_unit_order_match(self, k, buy_price, sell_price):
+    def single_unit_order_match(self, k: int, buy_price: float, sell_price: float):
         for i in range(k):
             t = Transaction(
                 buyyer_bid=self.bm.buyyers[i],
@@ -40,7 +40,7 @@ class Mechanism(TransactionManager, metaclass=MC):
             self.bm.buyyers.pop(0)
             self.bm.sellers.pop(0)
 
-    def multi_unit_order_match(self, k, buy_price, sell_price):
+    def multi_unit_order_match(self, k: int, buy_price: float, sell_price:float):
         i = 0
         j = 0
         while i < k and j < k:
@@ -120,7 +120,7 @@ class Average_Mechanism(Mechanism):
             return
 
         price = (
-            self.bm.sellers[self.breakeven - 1] + self.bm.buyyers[self.breakeven - 1]
+            self.bm.sellers[self.breakeven - 1].price + self.bm.buyyers[self.breakeven - 1].price
         ) / 2.0
         self.single_unit_order_match(self.breakeven, price, price)
 
@@ -131,7 +131,7 @@ class Average_Mechanism_Multi(Mechanism):
             return
 
         price = (
-            self.bm.sellers[self.breakeven - 1] + self.bm.buyyers[self.breakeven - 1]
+            self.bm.sellers[self.breakeven - 1].price + self.bm.buyyers[self.breakeven - 1].price
         ) / 2.0
         self.multi_unit_order_match(self.breakeven, price, price)
 
@@ -170,7 +170,7 @@ class VCG_Mechanism_Multi(Mechanism):
         self.multi_unit_order_match(self.breakeven, buy_price, sell_price)
 
 
-class TradeReduction_mechanism(Mechanism):
+class TradeReduction_Mechanism(Mechanism):
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
             return
@@ -180,7 +180,7 @@ class TradeReduction_mechanism(Mechanism):
         self.single_unit_order_match(self.breakeven - 1, buy_price, sell_price)
 
 
-class TradeReduction_mechanism_Multi(Mechanism):
+class TradeReduction_Mechanism_Multi(Mechanism):
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
             return
@@ -190,13 +190,13 @@ class TradeReduction_mechanism_Multi(Mechanism):
         self.multi_unit_order_match(self.breakeven - 1, buy_price, sell_price)
 
 
-class Macafee_mechanism(Mechanism):
+class Macafee_Mechanism(Mechanism):
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
             return
 
         price = (
-            self.bm.sellers[self.breakeven + 1] + self.bm.buyyers[self.breakeven + 1]
+            self.bm.sellers[self.breakeven + 1].price + self.bm.buyyers[self.breakeven + 1].price
         ) / 2.0
         if (
             self.bm.sellers[self.breakeven - 1].price
@@ -207,18 +207,19 @@ class Macafee_mechanism(Mechanism):
             self.single_unit_order_match(self.breakeven, price, price)
         else:
             # order match like trade reduction
-            sell_price = self.bm.sellers[self.breakeven - 1]
-            buy_price = self.bm.buyyers[self.breakeven - 1]
+            sell_price = self.bm.sellers[self.breakeven - 1].price
+            buy_price = self.bm.buyyers[self.breakeven - 1].price
             self.single_unit_order_match(self.breakeven - 1, buy_price, sell_price)
 
 
-class Macafee_mechanism_Multi(Mechanism):
+class Macafee_Mechanism_Multi(Mechanism):
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
             return
 
+        index = min(self.breakeven + 1, len(self.bm.sellers)-1, len(self.bm.buyyers)-1)
         price = (
-            self.bm.sellers[self.breakeven + 1] + self.bm.buyyers[self.breakeven + 1]
+            self.bm.sellers[index].price + self.bm.buyyers[index].price
         ) / 2.0
         if (
             self.bm.sellers[self.breakeven - 1].price
@@ -229,8 +230,8 @@ class Macafee_mechanism_Multi(Mechanism):
             self.multi_unit_order_match(self.breakeven, price, price)
         else:
             # order match like trade reduction
-            sell_price = self.bm.sellers[self.breakeven - 1]
-            buy_price = self.bm.buyyers[self.breakeven - 1]
+            sell_price = self.bm.sellers[self.breakeven - 1].price
+            buy_price = self.bm.buyyers[self.breakeven - 1].price
             self.multi_unit_order_match(self.breakeven - 1, buy_price, sell_price)
 
 
