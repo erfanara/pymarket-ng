@@ -15,6 +15,9 @@ from collections import OrderedDict
 def maximum_aggregated_utility(bids, *args, reservation_prices=None):
     if reservation_prices is None:
         reservation_prices = OrderedDict()
+    
+    if len(bids) == 0:
+        return pulp.LpStatusNotSolved, 0, {}
 
     model = pulp.LpProblem("Max_Aggregated_Utility", pulp.LpMaximize)
     buyers = bids.loc[bids["buying"]].index.values
@@ -53,6 +56,10 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
 
 def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
     model = pulp.LpProblem("Max_Traded_Volume", pulp.LpMaximize)
+
+    if len(bids) == 0:
+        return pulp.LpStatusNotSolved, 0, {}
+
     buyers = bids.loc[bids["buying"]].index.values
     sellers = bids.loc[~bids["buying"]].index.values
 
