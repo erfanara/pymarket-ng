@@ -10,7 +10,7 @@ from pymarketng.application.Statistics import (
 from pymarketng.application.UserManager import UserManager
 from pymarketng.domain.Bid import Bid
 
-
+# TODO: BidManager is like a round. Can we rename it to Round?
 class BidManager:
     def __init__(self) -> None:
         self.buyyers: List[Bid] = []
@@ -54,20 +54,23 @@ class BidManager:
         self.sellers.sort()
 
     def run(self, Mechanism_class, *args):
+        # TODO: slow
         bm_copy = copy.deepcopy(self)
         tm = Mechanism_class(bm_copy)
         tm.run(*args)
         return bm_copy, tm
 
-    def plot(self):
+    def plot_demand_curves(self):
         from pymarketng.application.Plot import plot_demand_curves
 
         plot_demand_curves(self)
 
+    # TODO: slow
     def get_maximum_aggregated_utility(self):
         result = maximum_aggregated_utility(self.get_df())[1]
         return float(result if result is not None else 0)
 
+    # TODO: slow
     def get_maximum_traded_volume(self):
         result = maximum_traded_volume(self.get_df())[1] 
         return float(result if result is not None else 0)
