@@ -53,7 +53,7 @@ class Market:
 
     @staticmethod
     def bids_selctor_template(
-        all_bids, *args, **kwargs
+        all_bids: pd.DataFrame, *args, **kwargs
     ) -> Generator[List[Bid], None, None]:
         yield []
 
@@ -155,7 +155,8 @@ def mechanism_selctor_avg(
 
 
 # TODO: it's not obvious that all_bids is a List[Bid] or Dataframe
-def bid_selector_1h(all_bids, *args, **kwargs) -> Generator[List[Bid], None, None]:
+# TODO: why not using pandas queries?
+def bid_selector_1h(all_bids: pd.DataFrame, *args, **kwargs) -> Generator[List[Bid], None, None]:
     df = pd.DataFrame(all_bids)
     df["time"] = pd.to_datetime(df["time"])
 

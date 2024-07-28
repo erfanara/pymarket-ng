@@ -55,6 +55,7 @@ class BidManager:
 
     def run(self, Mechanism_class, *args):
         # TODO: slow
+        # TODO: i guess we can remove redundant domain models (Bid, Transaction, ...) and use pandas dataframes to solve this 
         bm_copy = copy.deepcopy(self)
         tm = Mechanism_class(bm_copy)
         tm.run(*args)
