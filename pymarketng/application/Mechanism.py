@@ -17,11 +17,15 @@ class Mechanism(TransactionManager, metaclass=MC):
         bm.sort()
         self.bm = bm
         self.breakeven = bm.get_breakeven_index()
+        # TODO: slow
         self.maximum_aggregated_utility = self.bm.get_maximum_aggregated_utility()
         self.maximum_traded_volume = self.bm.get_maximum_traded_volume()
         # updated on post-launch
         self.percentage_welfare = 0
         self.percentage_traded = 0
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__
 
     # order match first k players
     # TODO: lambda for buy_price and sell_price
@@ -40,7 +44,7 @@ class Mechanism(TransactionManager, metaclass=MC):
             self.bm.buyyers.pop(0)
             self.bm.sellers.pop(0)
 
-    def multi_unit_order_match(self, k: int, buy_price: float, sell_price:float):
+    def multi_unit_order_match(self, k: int, buy_price: float, sell_price: float):
         i = 0
         j = 0
         while i < k and j < k:
@@ -82,12 +86,16 @@ class Mechanism(TransactionManager, metaclass=MC):
 
     def post_launch(self, *args):
         try:
-            self.percentage_welfare = self.get_players_total_trade_profit() / self.maximum_aggregated_utility
+            self.percentage_welfare = (
+                self.get_players_total_trade_profit() / self.maximum_aggregated_utility
+            )
         except ZeroDivisionError:
             self.percentage_welfare = None
-        
+
         try:
-            self.percentage_traded = self.get_players_total_trade_quantity() / self.maximum_traded_volume
+            self.percentage_traded = (
+                self.get_players_total_trade_quantity() / self.maximum_traded_volume
+            )
         except ZeroDivisionError:
             self.percentage_traded = None
 
@@ -101,12 +109,13 @@ class Mechanism(TransactionManager, metaclass=MC):
 
     def get_percentage_traded(self):
         return self.percentage_traded
-    
+
     def get_percentage_welfare(self):
         return self.percentage_welfare
 
     def get_stats(self):
         return {
+            "mechanism": self.__repr__(),
             **super().get_stats(),
             "maximum_aggregated_utility": self.maximum_aggregated_utility,
             "maximum_traded_volume": self.maximum_traded_volume,
@@ -114,13 +123,15 @@ class Mechanism(TransactionManager, metaclass=MC):
             "percentage_welfare": self.get_percentage_welfare(),
         }
 
+
 class Average_Mechanism(Mechanism):
     def launch(self, *args):
         if self.bm.get_breakeven_index() == 0:
             return
 
         price = (
-            self.bm.sellers[self.breakeven - 1].price + self.bm.buyyers[self.breakeven - 1].price
+            self.bm.sellers[self.breakeven - 1].price
+            + self.bm.buyyers[self.breakeven - 1].price
         ) / 2.0
         self.single_unit_order_match(self.breakeven, price, price)
 
@@ -131,7 +142,8 @@ class Average_Mechanism_Multi(Mechanism):
             return
 
         price = (
-            self.bm.sellers[self.breakeven - 1].price + self.bm.buyyers[self.breakeven - 1].price
+            self.bm.sellers[self.breakeven - 1].price
+            + self.bm.buyyers[self.breakeven - 1].price
         ) / 2.0
         self.multi_unit_order_match(self.breakeven, price, price)
 
@@ -143,12 +155,12 @@ class VCG_Mechanism(Mechanism):
 
         # TODO: Offset is okay for VCG mechanism?
         buy_price = max(
-            self.bm.sellers[self.breakeven - 2].price,
-            self.bm.buyyers[self.breakeven - 1].price,
+            self.bm.sellers[self.breakeven - 1].price,
+            self.bm.buyyers[min(self.breakeven, len(self.bm.buyyers) - 1)].price,
         )
         sell_price = min(
-            self.bm.buyyers[self.breakeven - 2].price,
-            self.bm.sellers[self.breakeven - 1].price,
+            self.bm.buyyers[self.breakeven - 1].price,
+            self.bm.sellers[min(self.breakeven, len(self.bm.sellers) - 1)].price,
         )
         self.single_unit_order_match(self.breakeven, buy_price, sell_price)
 
@@ -160,13 +172,26 @@ class VCG_Mechanism_Multi(Mechanism):
 
         # TODO: Offset is okay for VCG mechanism?
         buy_price = max(
-            self.bm.sellers[self.breakeven - 2].price,
-            self.bm.buyyers[self.breakeven - 1].price,
+            self.bm.sellers[self.breakeven - 1].price,
+            self.bm.buyyers[min(self.breakeven, len(self.bm.buyyers) - 1)].price,
         )
         sell_price = min(
-            self.bm.buyyers[self.breakeven - 2].price,
-            self.bm.sellers[self.breakeven - 1].price,
+            self.bm.buyyers[self.breakeven - 1].price,
+            self.bm.sellers[min(self.breakeven, len(self.bm.sellers) - 1)].price,
         )
+        # TODO: idk why but sometimes when all of the buyers/sellers are in the breakeven, then buy_price > sell_price.
+        # if buy_price > sell_price:
+        #     print(self.breakeven, len(self.bm.buyyers), len(self.bm.sellers))
+        #     print(
+        #         self.bm.sellers[self.breakeven - 1].price,
+        #         self.bm.buyyers[min(self.breakeven, len(self.bm.buyyers) - 1)].price,
+        #         self.bm.buyyers[self.breakeven - 1].price,
+        #         self.bm.sellers[min(self.breakeven, len(self.bm.sellers) - 1)].price,
+        #     )
+        #     tmp=buy_price
+        #     buy_price=sell_price
+        #     sell_price=tmp
+
         self.multi_unit_order_match(self.breakeven, buy_price, sell_price)
 
 
@@ -196,7 +221,8 @@ class Macafee_Mechanism(Mechanism):
             return
 
         price = (
-            self.bm.sellers[self.breakeven + 1].price + self.bm.buyyers[self.breakeven + 1].price
+            self.bm.sellers[self.breakeven + 1].price
+            + self.bm.buyyers[self.breakeven + 1].price
         ) / 2.0
         if (
             self.bm.sellers[self.breakeven - 1].price
@@ -217,10 +243,10 @@ class Macafee_Mechanism_Multi(Mechanism):
         if self.bm.get_breakeven_index() == 0:
             return
 
-        index = min(self.breakeven + 1, len(self.bm.sellers)-1, len(self.bm.buyyers)-1)
-        price = (
-            self.bm.sellers[index].price + self.bm.buyyers[index].price
-        ) / 2.0
+        index = min(
+            self.breakeven + 1, len(self.bm.sellers) - 1, len(self.bm.buyyers) - 1
+        )
+        price = (self.bm.sellers[index].price + self.bm.buyyers[index].price) / 2.0
         if (
             self.bm.sellers[self.breakeven - 1].price
             <= price
