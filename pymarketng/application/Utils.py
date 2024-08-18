@@ -26,4 +26,5 @@ def normalize_sklearn(series, scaler):
     normalized_data = scaler.fit_transform([[x] for x in series]).flatten()
     return normalized_data
 
-# 
+# up/low/normal
+#def get_

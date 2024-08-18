@@ -122,6 +122,8 @@ def mechanism_selctor_equal(
         """
 
 
+# TODO: score for every user (peak and non-peak)
+
 def mechanism_selector_auctionner_profit(
     bm_list: List[BidManager], tm_list: List[TransactionManager], *args, **kwargs
 )-> Generator[Type[Mechanism], None, None]:

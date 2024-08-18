@@ -22,15 +22,17 @@ class TransactionManager:
             [
                 t.quantity
                 * (
-                    (t.buyyer_bid.price - t.buy_price)
-                    + (t.sell_price - t.seller_bid.price)
+                    # TODO: is this correct?
+                    # (t.buyyer_bid.price - t.buy_price)
+                    # + (t.sell_price - t.seller_bid.price)
+                    (t.buyyer_bid.price - t.seller_bid.price)
                 )
                 for t in self.trans
             ]
         )
 
     def get_players_total_trade_quantity(self):
-        return sum([t.quantity for t in self.trans])/2.0
+        return sum([t.quantity for t in self.trans])
 
     def get_auctioneer_profit(self):
         return sum([t.quantity * (t.buy_price - t.sell_price) for t in self.trans])
@@ -41,3 +43,5 @@ class TransactionManager:
             "players_total_trade_quantity": self.get_players_total_trade_quantity(),
             "auctioneer_profit": self.get_auctioneer_profit()
         }
+        # TODO: k, i think we need more ... 
+        # TODO: what mechanism yields the maximum_aggregated_utility without any condition.
