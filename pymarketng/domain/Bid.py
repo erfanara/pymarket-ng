@@ -3,14 +3,14 @@ from pymarketng.domain.User import User
 
 class Bid:
     """
-    price: per unit of quantity
+    price: per unit of unit
     """
 
     def __init__(
-        self, price:float, user_id:int, quantity=1.0, buying=True, time=0, divisible=True
+        self, price:float, user_id:int, unit=1.0, buying=True, time=0, divisible=True
     ) -> None:
-        self.quantity = quantity
-        self.remaining_quantity = quantity
+        self.unit = unit
+        self.remaining_unit = unit
         self.price = price
         self.user = User(user_id)
         self.buying = buying
@@ -19,11 +19,11 @@ class Bid:
 
         # update user
         if self.buying:
-            self.user.total_bid -= self.price*self.quantity
-            self.user.total_quantity -= self.quantity
+            self.user.total_bid -= self.price*self.unit
+            self.user.total_unit -= self.unit
         else:
-            self.user.total_bid += self.price*self.quantity
-            self.user.total_quantity += self.quantity
+            self.user.total_bid += self.price*self.unit
+            self.user.total_unit += self.unit
         
         self.user.bids.append(self)
 
@@ -40,15 +40,15 @@ class Bid:
         return self.price + other.price
 
     def __repr__(self) -> str:
-        return f"{self.quantity} * {self.price}"
+        return f"{self.unit} * {self.price}"
 
     def as_dict(self):
         return {
             "user": self.user,
-            "buying": self.buying,
+            "is_buying": self.buying,
             "price": self.price,
-            "quantity": self.quantity,
-            "remaining_quantity": self.remaining_quantity,
+            'unit': self.unit,
+            "remaining_unit": self.remaining_unit,
             "time": self.time,
             "divisible": self.divisible,
         }

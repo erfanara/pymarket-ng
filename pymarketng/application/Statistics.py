@@ -20,8 +20,8 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
         return pulp.LpStatusNotSolved, 0, {}
 
     model = pulp.LpProblem("Max_Aggregated_Utility", pulp.LpMaximize)
-    buyers = bids.loc[bids["buying"]].index.values
-    sellers = bids.loc[~bids["buying"]].index.values
+    buyers = bids.loc[bids["is_buying"]].index.values
+    sellers = bids.loc[~bids["is_buying"]].index.values
     index = [(i, j) for i in buyers for j in sellers]
 
     for i, x in bids.iterrows():
@@ -36,9 +36,9 @@ def maximum_aggregated_utility(bids, *args, reservation_prices=None):
     model += pulp.lpSum([qs[x[0], x[1]] * coeffs[x] for x in index])
 
     for b in buyers:
-        model += pulp.lpSum(qs[b, j] for j in sellers) <= bids.iloc[b]['quantity']
+        model += pulp.lpSum(qs[b, j] for j in sellers) <= bids.iloc[b]['unit']
     for s in sellers:
-        model += pulp.lpSum(qs[i, s] for i in buyers) <= bids.iloc[s]['quantity']
+        model += pulp.lpSum(qs[i, s] for i in buyers) <= bids.iloc[s]['unit']
 
     model.solve(pulp.PULP_CBC_CMD(msg=False))
 
@@ -60,8 +60,8 @@ def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
     if len(bids) == 0:
         return pulp.LpStatusNotSolved, 0, {}
 
-    buyers = bids.loc[bids["buying"]].index.values
-    sellers = bids.loc[~bids["buying"]].index.values
+    buyers = bids.loc[bids["is_buying"]].index.values
+    sellers = bids.loc[~bids["is_buying"]].index.values
 
     index = [
         (i, j) for i in buyers for j in sellers if bids.iloc[i, 1] >= bids.iloc[j, 1]
@@ -73,12 +73,12 @@ def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
 
     for b in buyers:
         model += (
-            pulp.lpSum(qs[b, j] for j in sellers if (b, j) in index) <= bids.iloc[b]['quantity']
+            pulp.lpSum(qs[b, j] for j in sellers if (b, j) in index) <= bids.iloc[b]['unit']
         )
 
     for s in sellers:
         model += (
-            pulp.lpSum(qs[i, s] for i in buyers if (i, s) in index) <= bids.iloc[s]['quantity']
+            pulp.lpSum(qs[i, s] for i in buyers if (i, s) in index) <= bids.iloc[s]['unit']
         )
 
     model.solve(pulp.PULP_CBC_CMD(msg=False))
@@ -97,7 +97,7 @@ def maximum_traded_volume(bids, *args, reservation_prices=OrderedDict()):
 def percentage_traded(bids, transactions, reservation_prices=OrderedDict(), **kwargs):
     _, objective, _ = maximum_traded_volume(bids)
 
-    total_traded = transactions.quantity.sum() / 2
+    total_traded = transactions.unit.sum() / 2
 
     if objective is not None:
         return total_traded / objective
@@ -107,8 +107,8 @@ def percentage_traded(bids, transactions, reservation_prices=OrderedDict(), **kw
 
 def calculate_profits(bids, transactions, reservation_prices=None, fees=None, **kwargs):
     users = sorted(bids.user.unique())
-    buyers = bids.loc[bids["buying"]].index.values
-    sellers = bids.loc[~bids["buying"]].index.values
+    buyers = bids.loc[bids["is_buying"]].index.values
+    sellers = bids.loc[~bids["is_buying"]].index.values
 
     if reservation_prices is None:
         reservation_prices = OrderedDict()
@@ -122,7 +122,7 @@ def calculate_profits(bids, transactions, reservation_prices=None, fees=None, **
     profit = OrderedDict()
     for case in ["bid", "reservation"]:
         tmp = bids.reset_index().rename(columns={"index": "bid"}).copy()
-        tmp = tmp[["bid", "price", "buying", "user"]]
+        tmp = tmp[["bid", "price", "is_buying", "user"]]
         if case == "reservation":
             tmp.price = tmp.apply(
                 lambda x: reservation_prices.get(x.bid, x.price), axis=1
@@ -136,13 +136,13 @@ def calculate_profits(bids, transactions, reservation_prices=None, fees=None, **
 
         if case == "bid":
             # print(merged)
-            mb = merged.loc[merged["buying"]]
-            ms = merged.loc[~merged["buying"]]
+            mb = merged.loc[merged["is_buying"]]
+            ms = merged.loc[~merged["is_buying"]]
             # print(ms)
-            # print(ms.quantity.sum(), mb.quantity.sum())
-            # print(ms.price_x * ms.quantity)
-            profit_market = (mb.price_x * mb.quantity).values.sum()
-            profit_market -= (ms.price_x * ms.quantity).values.sum()
+            # print(ms.unit.sum(), mb.unit.sum())
+            # print(ms.price_x * ms.unit)
+            profit_market = (mb.price_x * mb.unit).values.sum()
+            profit_market -= (ms.price_x * ms.unit).values.sum()
             profit_market += fees.sum()
             profit["market"] = profit_market.astype("float64")
 
@@ -153,4 +153,4 @@ def get_gain(row):
     gap = row.price_y - row.price_x
     if not row.buying:
         gap = -gap
-    return gap * row.quantity
+    return gap * row.unit

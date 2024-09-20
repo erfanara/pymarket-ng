@@ -6,24 +6,24 @@ import networkx as nx
 
 from collections import OrderedDict
 
-from pymarketng.application.Mechanism import BidManager
+from pymarketng.application.BidsManager import BidsManager
 from pymarketng.application.TransactionManager import TransactionManager
 
 
-def demand_curve(bm: BidManager):
+def demand_curve(bm: BidsManager):
     bm.sort()
-    buying = bm.get_df_buyyers()
-    buying["acum"] = buying.quantity.cumsum()
+    buying = bm.get_df_buyers()
+    buying["acum"] = buying.unit.cumsum()
     demand_curve = buying[["acum", "price"]].values
     demand_curve = np.vstack([demand_curve, [np.inf, 0]])
     index = buying.index.values.astype("int64")
     return demand_curve, index
 
 
-def supply_curve(bm: BidManager):
+def supply_curve(bm: BidsManager):
     bm.sort()
     selling = bm.get_df_sellers()
-    selling["acum"] = selling.quantity.cumsum()
+    selling["acum"] = selling.unit.cumsum()
     supply_curve = selling[["acum", "price"]].values
     supply_curve = np.vstack([supply_curve, [np.inf, np.inf]])
     index = selling.index.values.astype("int64")
@@ -175,7 +175,7 @@ def supply_curve(bm: BidManager):
 
 
 # BUG: if all of bids are buy or sell this won't work
-def plot_demand_curves(bm: BidManager, ax=None, margin_X=1.2, margin_Y=1.2):
+def plot_demand_curves(bm: BidsManager, ax=None, margin_X=1.2, margin_Y=1.2):
     if ax is None:
         fig, ax = plt.subplots()
 
@@ -204,24 +204,24 @@ def plot_demand_curves(bm: BidManager, ax=None, margin_X=1.2, margin_Y=1.2):
 
     ax.step(x_dc, y_dc, where="post", c="r", label="Demand")
     ax.step(x_sp, y_sp, where="post", c="b", label="Supply")
-    ax.set_xlabel("Quantity")
+    ax.set_xlabel('unit')
     ax.set_ylabel("Price")
     ax.legend()
     plt.show()
 
 
-def plot_trades_as_graph(bm: BidManager, tm: TransactionManager, ax=None):
-    buyers = bm.get_df_buyyers()
+def plot_trades_as_graph(bm: BidsManager, tm: TransactionManager, ax=None):
+    buyers = bm.get_df_buyers()
     bids = bm.get_df()
     tmp = tm.get_df()
     tmp["user_1"] = tmp.seller_bid.map(bids.user)
     tmp["user_2"] = tmp.source.map(bids.user)
-    tmp["buying"] = tmp.buyyer_bid.map(buyers)
+    tmp["is_buying"] = tmp.buyer_bid.map(buyers)
 
     G = nx.from_pandas_edgelist(tmp, "user_1", "user_2")
 
     edge_labels = OrderedDict()
-    duplicated_labels = tmp.set_index(["user_1", "user_2"])["quantity"].to_dict()
+    duplicated_labels = tmp.set_index(["user_1", "user_2"])['unit'].to_dict()
     for (x, y), v in duplicated_labels.items():
         if (x, y) not in edge_labels and (y, x) not in edge_labels:
             edge_labels[(x, y)] = v
@@ -239,3 +239,82 @@ def plot_trades_as_graph(bm: BidManager, tm: TransactionManager, ax=None):
     _ = ax.axis("off")
 
     return ax
+
+# # TODO: move to library
+# import seaborn as sns
+# import matplotlib.pyplot as plt
+
+# fig, axes = plt.subplots(2, 1, figsize=(20, 20))
+
+# # Create a box plot for 'Price' for 'Seller' for each 'time'
+# sns.boxplot(x='time', y='price', data=sellers_df.reset_index(drop=True), ax=axes[0], flierprops=dict(markerfacecolor='r', marker='s'))
+# axes[0].set_title('Box plot of Price for Sellers over Time')
+# axes[0].set_xlabel('Time')
+# axes[0].set_ylabel('Price')
+# axes[0].tick_params(axis='x', rotation=90)  # Rotate x-axis labels for better visibility
+
+# # Create a box plot for 'Price' for 'Buyer' for each 'time'
+# sns.boxplot(x='time', y='price', data=buyers_df.reset_index(drop=True), ax=axes[1], flierprops=dict(markerfacecolor='r', marker='s'))
+# axes[1].set_title('Box plot of Price for Buyers over Time')
+# axes[1].set_xlabel('Time')
+# axes[1].set_ylabel('Price')
+# axes[1].tick_params(axis='x', rotation=90)  # Rotate x-axis labels for better visibility
+
+# plt.tight_layout()
+# plt.show()
+
+# TODO: i guess we need to remove the outlirers and then we are able to calculate the mean. 
+
+# # TODO: move to library
+# import seaborn as sns
+# import matplotlib.pyplot as plt
+
+# fig, axes = plt.subplots(2, 1, figsize=(20, 20))
+
+# # Create a box plot for 'unit' for 'Seller' for each 'time'
+# sns.boxplot(x='time', y='unit', data=sellers_df.reset_index(drop=True), ax=axes[0], flierprops=dict(markerfacecolor='r', marker='s'))
+# axes[0].set_title('Box plot of unit for Sellers over Time')
+# axes[0].set_xlabel('Time')
+# axes[0].set_ylabel('unit')
+# axes[0].tick_params(axis='x', rotation=90)  # Rotate x-axis labels for better visibility
+
+# # Create a box plot for 'unit' for 'Buyer' for each 'time'
+# sns.boxplot(x='time', y='unit', data=buyers_df.reset_index(drop=True), ax=axes[1], flierprops=dict(markerfacecolor='r', marker='s'))
+# axes[1].set_title('Box plot of unit for Buyers over Time')
+# axes[1].set_xlabel('Time')
+# axes[1].set_ylabel('unit')
+# axes[1].tick_params(axis='x', rotation=90)  # Rotate x-axis labels for better visibility
+
+# plt.tight_layout()
+# plt.show()
+
+
+# # TODO: move to library
+
+# sns.set_style("whitegrid")
+
+# # Create the plot
+# plt.figure(figsize=(20, 6))
+# buyers_bids_count = buyers_df.groupby('time').size().reset_index(name='count')
+# sellers_bids_count = sellers_df.groupby('time').size().reset_index(name='count')
+# all_bids_count = df.groupby('time').size().reset_index(name='count')
+# sns.lineplot(data=buyers_bids_count, x='time', y='count', marker='o', label='buy bids')
+# sns.lineplot(data=sellers_bids_count, x='time', y='count', marker='o', label='sell bids')
+# sns.lineplot(data=all_bids_count, x='time', y='count', marker='o', label='all bids')
+
+# # Add titles and labels
+# plt.title('Count of bids over time')
+# plt.xlabel('Time')
+# plt.ylabel('Count')
+# plt.xticks(rotation=45)  # Rotate x-axis labels for better readability
+# plt.legend()
+# plt.tight_layout()  # Adjust layout to make room for rotated labels
+
+# # Show the plot
+# plt.show()
+
+# numerical_columns = ['is_peak', 'load', 'generate','SOC','is_seller', 'price', 'unit']
+# plt.figure(figsize=(12, 8))
+# plt.suptitle('Heatmap', fontsize=16)
+# sns.heatmap(df[numerical_columns].corr(), annot=True, cmap='coolwarm')
+# plt.show()
