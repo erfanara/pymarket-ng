@@ -5,7 +5,6 @@ from pymarketng.application.Plot import plot_demand_curves, plot_trades_as_graph
 
 from pymarketng.application.Statistics import maximum_aggregated_utility
 from pymarketng.domain import User
-from pymarketng.domain.Bid import Bid
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,52 +14,8 @@ import inspect
 from typing import Callable, List, Type
 
 # 1 Round of auction dataframe
-n = 100
-sellers = {
-    "user": np.random.randint(1, 21, n),
-    "type": np.random.randint(1, 4, n),
-    # "unit": np.random.randint(1, 100, n),
-    "unit": 100.0,
-    "price": np.random.uniform(0, 200, n),
-    # "is_buying": np.random.choice([True, False], n) ,
-    "is_buying": False ,
-    "time": np.datetime64('2022-01-01T00:00:00', 'ns'),
-    # "time": sorted([
-    #     datetime.datetime(
-    #         2022,
-    #         np.random.randint(1, 13),
-    #         np.random.randint(1, 28),
-    #         np.random.randint(0, 24),
-    #         np.random.randint(0, 60),
-    #         np.random.randint(0, 60),
-    #     )
-    #     for _ in range(n)
-    # ]),
-}
-buyers = {
-    "user": np.random.randint(1, 21, n),
-    "type": np.random.randint(1, 4, n),
-    # "unit": np.random.randint(1, 100, n),
-    "unit": 100.0,
-    "price": np.random.uniform(200, 300, n),
-    # "is_buying": np.random.choice([True, False], n) ,
-    "is_buying": True,
-    "time": np.datetime64('2022-01-01T00:00:00', 'ns'),
-    # "time": sorted([
-    #     datetime.datetime(
-    #         2022,
-    #         np.random.randint(1, 13),
-    #         np.random.randint(1, 28),
-    #         np.random.randint(0, 24),
-    #         np.random.randint(0, 60),
-    #         np.random.randint(0, 60),
-    #     )
-    #     for _ in range(n)
-    # ]),
-}
 
-buyers = pd.DataFrame(buyers)
-sellers = pd.DataFrame(sellers)
+
 
 bm = BidsManager()
 bm.add_bids(buyers)
