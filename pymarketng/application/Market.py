@@ -1,5 +1,11 @@
 import inspect
 from typing import Callable, Generator, List, Type
+from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
 from pymarketng.application.BidsManager import BidsManager
 from pymarketng.application.Mechanism import (
@@ -12,28 +18,47 @@ from pymarketng.application.Mechanism import (
 )
 from pymarketng.application.TransactionManager import TransactionManager
 
-import pandas as pd
-import numpy as np
-import seaborn as sns
 
-
-def check_typing(a: Callable, b: Callable):
+def is_typing_equal(a: Callable, b: Callable):
     a_sign = inspect.signature(a)
     b_sign = inspect.signature(b)
     return a_sign == b_sign
 
-# TODO: what is the type of all_bids? it can be a list or maybe a dataframe, but for now we assume it's dataframe
+
+class MechanismSelector(ABC):
+    """
+    An abstract class that describes how to create a Mechanism selector.
+    To select a mechanism for each round, we have a select() function.
+    """
+
+    # features
+    parallel_run = False
+
+    @staticmethod
+    @abstractmethod
+    def select(
+        bm_list: List[BidsManager], tm_list: List[TransactionManager], *args, **kwargs
+    ) -> Generator[Type[Mechanism], None, None]:
+        """
+        This function is a generator that can be used as iterator,
+        Functionality: It should yield a Mechanism for each iteration.
+
+        This function is useful for users to implement their logic of
+        Mechanism selction over multiple rounds whithin the market.
+        """
+        yield Mechanism
+
+
 class Market:
     def __init__(
         self,
-        mechanism_selector: Callable,
+        mechanism_selector: Type[MechanismSelector],
         bids_selector: Callable,
         all_bids: pd.DataFrame,
         *args,
         **kwargs,
     ) -> None:
-        check_typing(mechanism_selector, Market.mechanism_selctor_template)
-        check_typing(bids_selector, Market.bids_selctor_template)
+        is_typing_equal(bids_selector, Market.bids_selctor_template)
         self.args = args
         self.kwargs = kwargs
         self.all_bids = all_bids
@@ -44,12 +69,11 @@ class Market:
         # Create a BidManager for the first BidsManager
         self.bm_list.append(BidsManager())
 
-    # generator: no return needed
-    @staticmethod
-    def mechanism_selctor_template(
-        bm_list: List[BidsManager], tm_list: List[TransactionManager], *args, **kwargs
-    ) -> Generator[type[Mechanism], None, None]:
-        yield Mechanism
+    # @staticmethod
+    # def mechanism_selctor_template(
+    #     bm_list: List[BidsManager], tm_list: List[TransactionManager], *args, **kwargs
+    # ) -> Generator[type[Mechanism], None, None]:
+    #     yield Mechanism
 
     @staticmethod
     def bids_selctor_template(
@@ -57,10 +81,10 @@ class Market:
     ) -> Generator[pd.DataFrame, None, None]:
         yield pd.DataFrame()
 
-    def run(self, *args):
+    def run_serial(self, *args):
         current_bm = self.bm_list[-1]
         bids_iterator = self.bids_selector(self.all_bids, *self.args, **self.kwargs)
-        mechanism_iterator = self.mechanism_selector(
+        mechanism_iterator = self.mechanism_selector.select(
             self.bm_list, self.tm_list, *self.args, **self.kwargs
         )
         for bids_df in bids_iterator:
@@ -72,7 +96,34 @@ class Market:
             self.tm_list.append(tm)
             current_bm = bm_new
 
-    
+    def run_parallel(self, *args):
+        current_bm = self.bm_list[-1]
+        bids_iterator = self.bids_selector(self.all_bids, *self.args, **self.kwargs)
+        mechanism_iterator = self.mechanism_selector.select(
+            self.bm_list, self.tm_list, *self.args, **self.kwargs
+        )
+        mechanisms_list = list(mechanism_iterator)
+
+        for bids_df in bids_iterator:
+            current_bm.add_bids(bids_df)
+            current_bm = BidsManager()
+            self.bm_list.append(current_bm)
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(bm.run, mc, *args): (bm, mc)
+                for bm, mc in zip(self.bm_list, mechanisms_list)
+            }
+            for future in as_completed(futures):
+                result = future.result()
+                self.tm_list.append(result)
+
+    def run(self, *args):
+        if self.mechanism_selector.parallel_run:
+            self.run_parallel(*args)
+        else:
+            self.run_serial(*args)
+
     # TODO: get users total profit
 
     # each bm/tm have stats (return them at once)
@@ -105,67 +156,21 @@ class Market:
         # swing weighting
         # things we need at the end
         # is vcg affordable
-        """
-def mechanism_selctor_equal(
-    bm_list: List[BidManager], tm_list: List[TransactionManager]
-) -> Type[Mechanism]:
-    previous_auctioneer_profit=0.0
-    if len(tm_list) != 0:
-        previous_auctioneer_profit=tm_list[-2].get_auctioneer_profit()
-    incoming_BidsManager_vcg_auctioneer_profit=bm_list[-1].run(VCG_Mechanism_Multi)[1].get_auctioneer_profit()
-
-    print(previous_auctioneer_profit, incoming_BidsManager_vcg_auctioneer_profit)
-    if equal_weightings(values_lists, weight_list, len(tm_list)-1):
-        return TradeReduction_Mechanism_Multi
-    else:
-        if Is_Affordable(previous_auctioneer_profit,incoming_BidsManager_vcg_auctioneer_profit):
-            return VCG_Mechanism_Multi
-        else:
-            return Average_Mechanism_Multi
-        """
 
 
-# TODO: score for every user (peak and non-peak)
-
-def mechanism_selector_auctionner_profit(
-    bm_list: List[BidsManager], tm_list: List[TransactionManager], *args, **kwargs
-)-> Generator[Type[Mechanism], None, None]:
-    # our options: vcg, tr, macafee
-    # strategy: TODO ...
-    beta = args[0]
-
-    auctioneer_total_profit = 0 
-    incoming_BidsManager_vcg_auctioneer_profit = 0
-    while True:
-        print("t ",auctioneer_total_profit, incoming_BidsManager_vcg_auctioneer_profit)
-        # TODO: TRM never selected. if auctioneer is on loss, then launch `TradeReduction` for the remedy
-        if auctioneer_total_profit < 0.0:
-            yield TradeReduction_Mechanism_Multi
-        else:
-            # simulate running vcg on the next BidsManager
-            incoming_BidsManager_vcg_auctioneer_profit = (
-                bm_list[-1].run(VCG_Mechanism_Multi)[1].get_auctioneer_profit()
-            )
-            # print("v ", incoming_BidsManager_vcg_auctioneer_profit)
-            if incoming_BidsManager_vcg_auctioneer_profit + auctioneer_total_profit > 0.0:
-                yield VCG_Mechanism_Multi
-            else:
-                # default option: macafee
-                yield Macafee_Mechanism_Multi
-        auctioneer_total_profit += tm_list[-1].get_auctioneer_profit()
-        yield Leftover_Clear
-
-def mechanism_selctor_avg(
-    bm_list: List[BidsManager], tm_list: List[TransactionManager], *args, **kwargs
-) -> Generator[Type[Mechanism], None, None]:
-    while True:
-        yield Average_Mechanism_Multi
+class MechanismSelectorAverage(MechanismSelector):
+    @staticmethod
+    def select(
+        bm_list: List[BidsManager], tm_list: List[TransactionManager], *args, **kwargs
+    ) -> Generator[Type[Mechanism], None, None]:
+        while True:
+            yield Average_Mechanism_Multi
 
 
-# TODO: why not using pandas queries?
-def bid_selector_1h(all_bids: pd.DataFrame, *args, **kwargs) -> Generator[pd.DataFrame, None, None]:
+def bid_selector_1h(
+    all_bids: pd.DataFrame, *args, **kwargs
+) -> Generator[pd.DataFrame, None, None]:
     df = all_bids
-    # df["time"] = pd.to_datetime(df["time"])
 
     # loop through each unique date
     for date in np.sort(df["time"].dt.date.unique()):
@@ -174,7 +179,9 @@ def bid_selector_1h(all_bids: pd.DataFrame, *args, **kwargs) -> Generator[pd.Dat
         # loop through each hour
         for hour in np.sort(date_times.dt.hour.unique()):
             # filter the dataframe for the current hour
-            hourly_df = df.loc[(df["time"].dt.date == date) & (df["time"].dt.hour == hour)]
+            hourly_df = df.loc[
+                (df["time"].dt.date == date) & (df["time"].dt.hour == hour)
+            ]
 
             yield hourly_df.copy()
             # yield a empty dataframe TODO: needs more explanation on why
