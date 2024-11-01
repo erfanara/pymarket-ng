@@ -51,14 +51,18 @@ class Mechanism(TransactionManager, metaclass=MC):
     def multi_unit_order_match(self, k: int, buy_price: float, sell_price: float):
         i = 0
         j = 0
+        buyers_to_drop = []
+        sellers_to_drop = []
         while i < k and j < k:
+            buyer = self.bm.buyers.iloc[i]
+            seller = self.bm.sellers.iloc[j]
             q = min(
-                self.bm.buyers.loc[i].remaining_unit,
-                self.bm.sellers.loc[j].remaining_unit,
+                buyer.remaining_unit,
+                seller.remaining_unit,
             )
             t = Transaction(
-                buyer_bid=self.bm.buyers.loc[i],
-                seller_bid=self.bm.sellers.loc[j],
+                buyer_bid=buyer,
+                seller_bid=seller,
                 buy_price=buy_price,
                 sell_price=sell_price,
                 unit=q,
@@ -67,22 +71,21 @@ class Mechanism(TransactionManager, metaclass=MC):
             self.add_transaction(t)
 
             # update remaining_unit
-            self.bm.buyers.loc[i, "remaining_unit"] -= q
-            self.bm.sellers.loc[j, "remaining_unit"] -= q
+            self.bm.buyers.at[i, "remaining_unit"] -= q
+            self.bm.sellers.at[j, "remaining_unit"] -= q
 
-            if self.bm.buyers.loc[i].remaining_unit == 0:
-                self.bm.buyers.drop(i, inplace=True)
+            if self.bm.buyers.at[i, "remaining_unit"] == 0:
+                buyers_to_drop.append(i)
                 i += 1
-            if self.bm.sellers.loc[j].remaining_unit == 0:
-                self.bm.sellers.drop(j, inplace=True)
+            if self.bm.sellers.at[j, "remaining_unit"] == 0:
+                sellers_to_drop.append(j)
                 j += 1
 
-        self.bm.sellers.reset_index(drop=True)
-        self.bm.buyers.reset_index(drop=True)
-        # for _ in range(i):
-        #     self.bm.buyers.pop(0)
-        # for _ in range(j):
-        #     self.bm.sellers.pop(0)
+        self.bm.buyers.drop(index=buyers_to_drop, inplace=True)
+        self.bm.sellers.drop(index=sellers_to_drop, inplace=True)
+
+        self.bm.sellers.reset_index(drop=True, inplace=True)
+        self.bm.buyers.reset_index(drop=True, inplace=True)
 
     def update_users_participation_num(self):
         for u in self.bm.um.users:
