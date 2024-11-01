@@ -1,3 +1,4 @@
+from typing import Any, Tuple, Type
 import pandas as pd
 
 
@@ -5,6 +6,7 @@ import pandas as pd
 #     maximum_aggregated_utility,
 #     maximum_traded_volume,
 # )
+# from pymarketng.application.Mechanism import Mechanism
 from pymarketng.application.UserManager import UserManager
 # from pymarketng.domain.Bid import Bid
 
@@ -106,11 +108,16 @@ class BidsManager:
         bm_copy = BidsManager(buyers_copy, sellers_copy)
         return bm_copy
 
-    def run(self, Mechanism_class, *args):
-        bm_copy = self.clone()
-        tm = Mechanism_class(bm_copy)
-        tm.run(*args)
-        return bm_copy, tm
+    def run(self, Mechanism_classes: Tuple[Any, ...], *args):
+        # TODO: needs cleaning
+        results = []
+        for Mech in Mechanism_classes:
+            bm_copy = self.clone()
+            tm = Mech(bm_copy)
+            tm.run(*args)
+
+            results.append((bm_copy,tm))
+        return results
 
     def plot_demand_curves(self):
         from pymarketng.application.Plot import plot_demand_curves
