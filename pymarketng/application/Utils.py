@@ -1,5 +1,5 @@
-from scipy import stats
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, Normalizer
+# from scipy import stats
+# from sklearn.preprocessing import MinMaxScaler, StandardScaler, Normalizer
 import numpy as np
 
 
@@ -22,9 +22,9 @@ def calc_mean(series):
         return 0
 
 # Anomaly
-def get_anomalies_zscore(series, thresh=3):
-    z_scores = np.abs(stats.zscore(series))
-    return series[z_scores > thresh]
+# def get_anomalies_zscore(series, thresh=3):
+#     z_scores = np.abs(stats.zscore(series))
+#     return series[z_scores > thresh]
 
 
 def get_anomalies_modified_zscore(series, thresh=1):

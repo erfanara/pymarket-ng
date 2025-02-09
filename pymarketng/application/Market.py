@@ -1,10 +1,14 @@
 import inspect
+import random
+import os
 from typing import Callable, Generator, List, Type, Tuple
 from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
 import numpy as np
 import pandas as pd
+
+# import fireducks.pandas as pd
 import seaborn as sns
 
 from pymarketng.application.BidsManager import BidsManager
@@ -96,15 +100,15 @@ class Market:
         mechanism_iterator = self.mechanism_selector(
             self.bm_list, self.tm_list, *self.args, **self.kwargs
         ).select()
-        for bids_df in bids_iterator:
+        for i, bids_df in enumerate(bids_iterator):
             current_bm = self.bm_list[-1]
 
             # for each BidsManager, first add the bids, and then run the mechanism
             current_bm.add_bids(bids_df)
-            results = current_bm.run(next(mechanism_iterator), *args)
+            new_bm, tm = current_bm.run(next(mechanism_iterator), *args)
 
-            self.bm_list.extend([r[0] for r in results])
-            self.tm_list.extend([r[1] for r in results])
+            self.bm_list.append(new_bm)
+            self.tm_list.append(tm)
 
     def run_parallel(self, *args):
         bids_iterator = self.bids_selector(self.all_bids, *self.args, **self.kwargs)
@@ -113,21 +117,22 @@ class Market:
             self.bm_list, self.tm_list, *self.args, **self.kwargs
         ).select()
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            futures = {}
+        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+            futures = []
             for bids_df in bids_iterator:
                 current_bm = self.bm_list[-1]
 
                 # for each BidsManager, first add the bids, and then run the mechanism
                 current_bm.add_bids(bids_df)
                 mc = next(mechanism_iterator)
-                futures[executor.submit(current_bm.run, mc, *args)] = (current_bm, mc)
+                futures.append(executor.submit(current_bm.run, mc, *args))
 
                 # add a new BidManager for the next round
                 self.bm_list.append(BidsManager())
-            for future in as_completed(futures):
-                result = future.result()
-                self.tm_list.extend([r[1] for r in result])
+            for i, future in enumerate(as_completed(futures)):
+                print("done", i)
+                _, tm = future.result()
+                self.tm_list.append(tm)
 
     def run(self, *args):
         if self.mechanism_selector.parallel_run:
@@ -143,6 +148,41 @@ class Market:
 
     def get_TMs_stats(self):
         return pd.json_normalize([tm.get_stats() for tm in self.tm_list])
+
+    def get_total_traded_unit_p2p(self):
+        return sum([tm.get_total_traded_unit_p2p() for tm in self.tm_list])
+
+    def get_players_total_trade_unit(self):
+        return sum([tm.get_players_total_trade_unit() for tm in self.tm_list])
+
+    def get_players_profit_p2p_vs_infra(self, p_G, p_feat):
+        return sum(
+            [tm.get_players_profit_p2p_vs_infra(p_G, p_feat) for tm in self.tm_list]
+        )
+
+    def get_auctioneer_profit(self):
+        return sum([tm.get_auctioneer_profit() for tm in self.tm_list])
+
+    def get_num_of_p2p_transactions(self):
+        return sum(
+            [
+                len([t for t in tm.trans if t.mechanism_name != "Leftover_Clear"])
+                for tm in self.tm_list
+            ]
+        )
+
+    def get_num_of_infra_transactions(self):
+        return sum(
+            [
+                len([t for t in tm.trans if t.mechanism_name == "Leftover_Clear"])
+                for tm in self.tm_list
+            ]
+        )
+
+    def get_percentage_of_p2p_transactions(self):
+        x = self.get_num_of_p2p_transactions()
+        y = self.get_num_of_infra_transactions()
+        return x / (x + y)
 
         # TODO: number of sellers/buyers in each BidsManager is not whithin stats
         # TODO: ploting
@@ -172,8 +212,27 @@ class Market:
 def bid_selector_1h(
     all_bids: pd.DataFrame, *args, **kwargs
 ) -> Generator[pd.DataFrame, None, None]:
-    grouped = all_bids.groupby([all_bids['time'].dt.date, all_bids['time'].dt.hour])
+    grouped = all_bids.groupby([all_bids["time"].dt.date, all_bids["time"].dt.hour])
     for (date, hour), group in grouped:
-        print(date, hour)
         yield group.copy()
-        yield pd.DataFrame(BidsManager.df_template)
+        # yield pd.DataFrame(BidsManager.df_template)
+
+
+class MechanismSelectorStatic(MechanismSelector):
+    parallel_run = True
+
+    def select(self) -> Generator[Tuple[Type[Mechanism], ...], None, None]:
+        while True:
+            yield (self.args[0], Leftover_Clear)
+
+
+class MechanismSelectorRandom(MechanismSelector):
+    parallel_run = True
+
+    def select(self) -> Generator[Tuple[Type[Mechanism], ...], None, None]:
+        while True:
+            items = list(self.args[0].keys())
+            weights = list(self.args[0].values())
+            mc = random.choices(items, weights=weights, k=1)[0]
+            print(mc)
+            yield (mc, Leftover_Clear)

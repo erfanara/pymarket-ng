@@ -7,6 +7,7 @@ from pymarketng.application.Statistics import maximum_aggregated_utility
 from pymarketng.domain import User
 import numpy as np
 import pandas as pd
+# import fireducks.pandas as pd
 import matplotlib.pyplot as plt
 import datetime
 

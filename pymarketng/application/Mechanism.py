@@ -1,25 +1,29 @@
 from pymarketng.application.BidsManager import BidsManager
-from pymarketng.application.TransactionManager import TransactionManager
+
+# from pymarketng.application.TransactionManager import TransactionManager
 from pymarketng.domain.User import User
+
 # from pymarketng.domain.Bid import Bid
 from pymarketng.domain.Transaction import Transaction
 
 import pandas as pd
+# import fireducks.pandas as pd
 import numpy as np
 # from typing import Type
+import line_profiler
 
 
 class MC(type):
-    def __repr__(self) -> str:
-        return self.__name__
+    def __repr__(cls) -> str:
+        return cls.__name__
 
 
-class Mechanism(TransactionManager, metaclass=MC):
+class Mechanism(metaclass=MC):
     def __init__(self, bm: BidsManager, time=0) -> None:
-        super().__init__(time)
         bm.sort()
         self.bm = bm
-        self.breakeven = bm.get_breakeven_index()
+        self.trans = []
+        self.breakeven = bm.get_breakeven_single()
         # TODO: slow
         # self.maximum_aggregated_utility = self.bm.get_maximum_aggregated_utility()
         # self.maximum_traded_volume = self.bm.get_maximum_traded_volume()
@@ -31,7 +35,7 @@ class Mechanism(TransactionManager, metaclass=MC):
         return self.__class__.__name__
 
     # order match first k players
-    # TODO: lambda for buy_price and sell_price
+    # TODO: feature req: lambda for buy_price and sell_price
     def single_unit_order_match(self, k: int, buy_price: float, sell_price: float):
         for i in range(k):
             t = Transaction(
@@ -39,23 +43,27 @@ class Mechanism(TransactionManager, metaclass=MC):
                 seller_bid=self.bm.sellers.iloc[i],
                 buy_price=buy_price,
                 sell_price=sell_price,
-                mechanism_name=self.__repr__()
+                mechanism_name=repr(self),
             )
-            self.add_transaction(t)
+            self.trans.append(t)
 
-        # remove matching bids from bm TODO: prohibit direct access
+        # remove matching bids from bm
         for _ in range(k):
             self.bm.buyers.pop(0)
             self.bm.sellers.pop(0)
 
-    def multi_unit_order_match(self, k: int, buy_price: float, sell_price: float):
+    @line_profiler.profile
+    def multi_unit_order_match(
+        self, buyers_k: int, sellers_k: int, buy_price: float, sell_price: float
+    ):
         i = 0
         j = 0
         buyers_to_drop = []
         sellers_to_drop = []
-        while i < k and j < k:
+        while i < buyers_k and j < sellers_k:
             buyer = self.bm.buyers.iloc[i]
             seller = self.bm.sellers.iloc[j]
+
             q = min(
                 buyer.remaining_unit,
                 seller.remaining_unit,
@@ -66,9 +74,9 @@ class Mechanism(TransactionManager, metaclass=MC):
                 buy_price=buy_price,
                 sell_price=sell_price,
                 unit=q,
-                mechanism_name=self.__repr__()
+                mechanism_name=repr(self),
             )
-            self.add_transaction(t)
+            self.trans.append(t)
 
             # update remaining_unit
             self.bm.buyers.at[i, "remaining_unit"] -= q
@@ -91,13 +99,6 @@ class Mechanism(TransactionManager, metaclass=MC):
         for u in self.bm.um.users:
             u.num_of_participations += 1
 
-    def update_users_transactions_num(self):
-        for t in self.trans:
-            buyer = User(t.buyer_bid.user)
-            seller = User(t.seller_bid.user)
-            buyer.num_of_transactions_taken_via_p2p += 1
-            seller.num_of_transactions_taken_via_p2p += 1
-
     def run(self, *args):
         self.pre_launch(*args)
         self.launch(*args)
@@ -107,7 +108,8 @@ class Mechanism(TransactionManager, metaclass=MC):
         self.update_users_participation_num()
 
     def post_launch(self, *args):
-        self.update_users_transactions_num()
+        pass
+        # self.update_users_transactions_num()
         # try:
         #     self.percentage_welfare = (
         #         self.get_players_total_trade_profit() / self.maximum_aggregated_utility
@@ -138,18 +140,24 @@ class Mechanism(TransactionManager, metaclass=MC):
 
     def get_stats(self):
         return {
-            "mechanism": self.__repr__(),
-            **super().get_stats(),
+            "mechanism": repr(self),
+            # **super().get_stats(),
             # "maximum_aggregated_utility": self.maximum_aggregated_utility,
             # "maximum_traded_volume": self.maximum_traded_volume,
             # "percentage_traded": self.get_percentage_traded(),
             # "percentage_welfare": self.get_percentage_welfare(),
         }
 
+    def get_transactions(self):
+        return self.trans
+
+    def get_name(self):
+        return repr(self)
+
 
 class Average_Mechanism(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        if self.bm.get_breakeven_single() == 0:
             return
 
         price = (
@@ -161,22 +169,21 @@ class Average_Mechanism(Mechanism):
 
 class Average_Mechanism_Multi(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        i, j = self.bm.get_breakeven_multi()
+        if i == 0 or j == 0:
             return
 
         price = (
-            self.bm.sellers.iloc[self.breakeven - 1].price
-            + self.bm.buyers.iloc[self.breakeven - 1].price
+            self.bm.buyers.iloc[i - 1].price + self.bm.sellers.iloc[j - 1].price
         ) / 2.0
-        self.multi_unit_order_match(self.breakeven, price, price)
+        self.multi_unit_order_match(i, j, price, price)
 
 
 class VCG_Mechanism(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        if self.bm.get_breakeven_single() == 0:
             return
 
-        # TODO: Offset is okay for VCG mechanism?
         buy_price = max(
             self.bm.sellers.iloc[self.breakeven - 1].price,
             self.bm.buyers.iloc[min(self.breakeven, len(self.bm.buyers) - 1)].price,
@@ -190,58 +197,49 @@ class VCG_Mechanism(Mechanism):
 
 class VCG_Mechanism_Multi(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        i, j = self.bm.get_breakeven_multi()
+        if i == 0 or j == 0:
             return
 
-        # TODO: Offset is okay for VCG mechanism?
-        buy_price = max(
-            self.bm.sellers.iloc[self.breakeven - 1].price,
-            self.bm.buyers.iloc[min(self.breakeven, len(self.bm.buyers) - 1)].price,
-        )
-        sell_price = min(
-            self.bm.buyers.iloc[self.breakeven - 1].price,
-            self.bm.sellers.iloc[min(self.breakeven, len(self.bm.sellers) - 1)].price,
-        )
-        # TODO: idk why but sometimes when all of the buyers/sellers are in the breakeven, then buy_price > sell_price.
-        # if buy_price > sell_price:
-        #     print(self.breakeven, len(self.bm.buyers), len(self.bm.sellers))
-        #     print(
-        #         self.bm.sellers.iloc[self.breakeven - 1].price,
-        #         self.bm.buyers.iloc[min(self.breakeven, len(self.bm.buyers) - 1)].price,
-        #         self.bm.buyers.iloc[self.breakeven - 1].price,
-        #         self.bm.sellers.iloc[min(self.breakeven, len(self.bm.sellers) - 1)].price,
-        #     )
-        #     tmp=buy_price
-        #     buy_price=sell_price
-        #     sell_price=tmp
+        # buy_price = max(
+        #     self.bm.sellers.iloc[j - 1].price,
+        #     self.bm.buyers.iloc[min(i, len(self.bm.buyers) - 1)].price,
+        # )
+        # sell_price = min(
+        #     self.bm.buyers.iloc[i - 1].price,
+        #     self.bm.sellers.iloc[min(j, len(self.bm.sellers) - 1)].price,
+        # )
+        buy_price = self.bm.sellers.iloc[j - 1].price
+        sell_price = self.bm.buyers.iloc[i - 1].price
 
-        self.multi_unit_order_match(self.breakeven, buy_price, sell_price)
+        self.multi_unit_order_match(i, j, buy_price, sell_price)
 
 
 class TradeReduction_Mechanism(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        if self.bm.get_breakeven_single() == 0:
             return
 
-        sell_price = self.bm.sellers.iloc[self.breakeven - 1].price
         buy_price = self.bm.buyers.iloc[self.breakeven - 1].price
+        sell_price = self.bm.sellers.iloc[self.breakeven - 1].price
         self.single_unit_order_match(self.breakeven - 1, buy_price, sell_price)
 
 
 class TradeReduction_Mechanism_Multi(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        i, j = self.bm.get_breakeven_multi()
+        if i == 0 or j == 0:
             return
 
-        sell_price = self.bm.sellers.iloc[self.breakeven - 1].price
-        buy_price = self.bm.buyers.iloc[self.breakeven - 1].price
-        self.multi_unit_order_match(self.breakeven - 1, buy_price, sell_price)
+        buy_price = self.bm.buyers.iloc[i - 1].price
+        sell_price = self.bm.sellers.iloc[j - 1].price
+        self.multi_unit_order_match(i - 1, j - 1, buy_price, sell_price)
 
 
 # TODO: rename needed
 class Macafee_Mechanism(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        if self.bm.get_breakeven_single() == 0:
             return
 
         price = (
@@ -264,14 +262,14 @@ class Macafee_Mechanism(Mechanism):
 
 class Macafee_Mechanism_Multi(Mechanism):
     def launch(self, *args):
-        if self.bm.get_breakeven_index() == 0:
+        i, j = self.bm.get_breakeven_multi()
+        if i == 0 or j == 0:
             return
 
-        index = min(
-            self.breakeven + 1, len(self.bm.sellers) - 1, len(self.bm.buyers) - 1
-        )
+        i_index = min(i + 1, len(self.bm.buyers) - 1)
+        j_index = min(j + 1, len(self.bm.sellers) - 1)
         price = (
-            self.bm.sellers.iloc[index].price + self.bm.buyers.iloc[index].price
+            self.bm.buyers.iloc[i_index].price + self.bm.sellers.iloc[j_index].price
         ) / 2.0
         if (
             self.bm.sellers.iloc[self.breakeven - 1].price
@@ -279,12 +277,12 @@ class Macafee_Mechanism_Multi(Mechanism):
             <= self.bm.buyers.iloc[self.breakeven - 1].price
         ):
             # order match first k sellers and buyers with price p
-            self.multi_unit_order_match(self.breakeven, price, price)
+            self.multi_unit_order_match(i, j, price, price)
         else:
             # order match like trade reduction
-            sell_price = self.bm.sellers.iloc[self.breakeven - 1].price
-            buy_price = self.bm.buyers.iloc[self.breakeven - 1].price
-            self.multi_unit_order_match(self.breakeven - 1, buy_price, sell_price)
+            buy_price = self.bm.buyers.iloc[i - 1].price
+            sell_price = self.bm.sellers.iloc[j - 1].price
+            self.multi_unit_order_match(i - 1, j - 1, buy_price, sell_price)
 
 
 class Leftover_Clear(Mechanism):
@@ -318,38 +316,25 @@ class Leftover_Clear(Mechanism):
                 seller_bid=base_sell_bid,
                 buy_price=base_sell_price,
                 sell_price=base_sell_price,
-                unit=b.unit,
-                mechanism_name=self.__repr__()
+                unit=b.remaining_unit,
+                mechanism_name=repr(self),
             )
-            self.add_transaction(t)
+            self.trans.append(t)
         for i, s in self.bm.sellers.iterrows():
             t = Transaction(
                 buyer_bid=base_buy_bid,
                 seller_bid=s,
                 buy_price=base_buy_price,
                 sell_price=base_buy_price,
-                unit=s.unit,
-                mechanism_name=self.__repr__()
+                unit=s.remaining_unit,
+                mechanism_name=repr(self),
             )
-            self.add_transaction(t)
+            self.trans.append(t)
 
         # clear dataframes but keep columns
         self.bm.buyers = pd.DataFrame(columns=self.bm.buyers.columns)
         self.bm.sellers = pd.DataFrame(columns=self.bm.sellers.columns)
 
     # override
-    def update_users_transactions_num(self):
-        for t in self.trans:
-            buyer = User(t.buyer_bid.user)
-            seller = User(t.seller_bid.user)
-            buyer.num_of_transactions_taken_via_infra += 1
-            seller.num_of_transactions_taken_via_infra += 1
-
-    # override
     def update_users_participation_num(self):
         pass
-
-    # TODO: how to run the super class pre_launch here in this function?
-    # override
-    # def pre_launch(self, *args):
-    #     pass
